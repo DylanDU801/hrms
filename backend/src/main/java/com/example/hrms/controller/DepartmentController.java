@@ -1,6 +1,8 @@
 package com.example.hrms.controller;
 
+import com.example.hrms.dto.Result;
 import com.example.hrms.entity.Department;
+import com.example.hrms.exception.ResourceNotFoundException;
 import com.example.hrms.repository.DepartmentRepository;
 import org.springframework.web.bind.annotation.*;
 
@@ -15,37 +17,41 @@ public class DepartmentController {
         this.departmentRepository = departmentRepository;
     }
 
-    // 查询所有部门
     @GetMapping
-    public List<Department> list() {
-        return departmentRepository.findAll();
+    public Result<List<Department>> list() {
+        return Result.success(departmentRepository.findAll());
     }
 
-    // 查询单个部门
     @GetMapping("/{id}")
-    public Department get(@PathVariable Long id) {
-        return departmentRepository.findById(id).orElse(null);
+    public Result<Department> get(@PathVariable Long id) {
+        Department department = departmentRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("部门不存在，ID: " + id));
+        return Result.success(department);
     }
 
-    // 新增部门
     @PostMapping
-    public Department create(@RequestBody Department department) {
-        return departmentRepository.save(department);
+    public Result<Department> create(@RequestBody Department department) {
+        return Result.success(departmentRepository.save(department));
     }
 
-    // 修改部门
     @PutMapping("/{id}")
-    public Department update(@PathVariable Long id, @RequestBody Department newDept) {
-        return departmentRepository.findById(id)
+    public Result<Department> update(@PathVariable Long id, @RequestBody Department newDept) {
+        Department department = departmentRepository.findById(id)
                 .map(dept -> {
                     dept.setName(newDept.getName());
                     return departmentRepository.save(dept);
-                }).orElse(null);
+                })
+                .orElseThrow(() -> new ResourceNotFoundException("部门不存在，ID: " + id));
+        
+        return Result.success(department);
     }
 
-    // 删除部门
     @DeleteMapping("/{id}")
-    public void delete(@PathVariable Long id) {
+    public Result<Void> delete(@PathVariable Long id) {
+        if (!departmentRepository.existsById(id)) {
+            throw new ResourceNotFoundException("部门不存在，ID: " + id);
+        }
         departmentRepository.deleteById(id);
+        return Result.success(null);
     }
 }
