@@ -1,19 +1,21 @@
 <template>
-  <div :class="classObj" class="app-wrapper">
-    <div v-if="device==='mobile' && sidebar.opened" class="drawer-bg" @click="handleClickOutside" />
+  <div class="app-wrapper">
     <sidebar class="sidebar-container" />
     <div class="main-container">
-      <div :class="{'fixed-header': fixedHeader}">
-        <navbar />
+      <navbar class="fixed-header" />
+      <div class="main-content">
+        <div class="page-header">
+          <h1 class="main-title">外包人员管理系统</h1>
+        </div>
+        <app-main />
       </div>
-      <app-main />
     </div>
   </div>
 </template>
 
 <script>
 import { Navbar, Sidebar, AppMain } from './components'
-import ResizeMixin from './mixin/ResizeHandler'
+import ResizeHandler from './mixin/ResizeHandler'
 
 export default {
   name: 'Layout',
@@ -22,31 +24,7 @@ export default {
     Sidebar,
     AppMain
   },
-  mixins: [ResizeMixin],
-  computed: {
-    sidebar() {
-      return this.$store.state.app.sidebar
-    },
-    device() {
-      return this.$store.state.app.device
-    },
-    fixedHeader() {
-      return this.$store.state.settings.fixedHeader
-    },
-    classObj() {
-      return {
-        hideSidebar: !this.sidebar.opened,
-        openSidebar: this.sidebar.opened,
-        withoutAnimation: this.sidebar.withoutAnimation,
-        mobile: this.device === 'mobile'
-      }
-    }
-  },
-  methods: {
-    handleClickOutside() {
-      this.$store.dispatch('app/closeSideBar', { withoutAnimation: false })
-    }
-  }
+  mixins: [ResizeHandler]
 }
 </script>
 
@@ -57,37 +35,75 @@ export default {
   position: relative;
   height: 100%;
   width: 100%;
-  
-  &.mobile.openSidebar {
-    position: fixed;
-    top: 0;
-  }
+  display: flex;
 }
 
-.drawer-bg {
-  background: #000;
-  opacity: 0.3;
-  width: 100%;
+.sidebar-container {
+  width: $sideBarWidth;
+  position: fixed;
+  font-size: 0;
   top: 0;
-  height: 100%;
-  position: absolute;
-  z-index: 999;
+  bottom: 0;
+  left: 0;
+  z-index: 1001;
+  overflow: hidden;
+  transition: width 0.28s;
+  background-color: $menuBg;
+}
+
+.main-container {
+  margin-left: $sideBarWidth;
+  position: relative;
+  width: calc(100% - #{$sideBarWidth});
+  min-height: 100%;
+  transition: margin-left 0.28s;
 }
 
 .fixed-header {
-  position: fixed;
+  position: sticky;
   top: 0;
   right: 0;
   z-index: 9;
-  width: calc(100% - #{$sideBarWidth});
-  transition: width 0.28s;
-}
-
-.hideSidebar .fixed-header {
-  width: calc(100% - 54px)
-}
-
-.mobile .fixed-header {
   width: 100%;
+  transition: width 0.28s;
+  background-color: #fff;
+  box-shadow: 0 1px 4px rgba(0, 21, 41, 0.08);
+}
+
+.main-content {
+  padding: 0;
+  position: relative;
+  min-height: calc(100vh - 50px);
+}
+
+.page-header {
+  padding: 15px 20px;
+  margin-bottom: 15px;
+  background-color: white;
+  display: flex;
+  align-items: center;
+}
+
+.main-title {
+  margin: 0;
+  padding: 0;
+  font-size: 24px;
+  font-weight: 600;
+  color: #409EFF;
+}
+
+@media (max-width: 992px) {
+  .main-container {
+    margin-left: 64px;
+    width: calc(100% - 64px);
+  }
+  
+  .sidebar-container {
+    width: 64px !important;
+  }
+  
+  .main-title {
+    font-size: 20px;
+  }
 }
 </style>

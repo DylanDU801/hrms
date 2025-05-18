@@ -15,9 +15,11 @@ module.exports = {
   devServer: {
     port: 8080,
     open: true,
-    overlay: {
+    client: {
+      overlay: {
       warnings: false,
       errors: true
+      }
     },
     proxy: {
       // 代理所有/api开头的请求

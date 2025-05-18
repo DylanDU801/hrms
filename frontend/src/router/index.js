@@ -41,7 +41,7 @@ export const constantRoutes = [
       {
         path: 'list',
         name: 'EmployeeList',
-        component: () => import('@/views/employees/index'),
+        component: () => import('@/views/employees/list'),
         meta: { title: '员工列表', icon: 'el-icon-s-order' }
       },
       {

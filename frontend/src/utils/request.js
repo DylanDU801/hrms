@@ -1,5 +1,5 @@
 import axios from 'axios'
-import { MessageBox, Message } from 'element-ui'
+import { Message, MessageBox } from 'element-ui'
 import store from '@/store'
 import { getToken } from '@/utils/auth'
 
@@ -12,16 +12,13 @@ const service = axios.create({
 // 请求拦截器
 service.interceptors.request.use(
   config => {
-    // 在发送请求之前做些什么
     if (store.getters.token) {
-      // 让每个请求携带token
       config.headers['Authorization'] = `Bearer ${getToken()}`
     }
     return config
   },
   error => {
-    // 处理请求错误
-    console.log(error) // 用于调试
+    console.log(error) // for debug
     return Promise.reject(error)
   }
 )
@@ -31,7 +28,7 @@ service.interceptors.response.use(
   response => {
     const res = response.data
 
-    // 如果自定义代码不是20000，则判断为错误
+    // 如果返回的状态码不是20000，则判断为错误
     if (res.code !== 20000) {
       Message({
         message: res.message || 'Error',
@@ -62,7 +59,7 @@ service.interceptors.response.use(
     }
   },
   error => {
-    console.log('err' + error) // 用于调试
+    console.log('err' + error) // for debug
     Message({
       message: error.message,
       type: 'error',
