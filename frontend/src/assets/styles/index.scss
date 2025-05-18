@@ -1,0 +1,59 @@
+/* 全局变量 */
+:root {
+  --primary-color: #409EFF;
+  --success-color: #67C23A;
+  --warning-color: #E6A23C;
+  --danger-color: #F56C6C;
+  --info-color: #909399;
+  --bg-color: #f5f7fa;
+  --text-color: #303133;
+  --border-color: #DCDFE6;
+}
+
+/* 重置样式 */
+body {
+  margin: 0;
+  padding: 0;
+  font-family: "Helvetica Neue", Helvetica, "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", "微软雅黑", Arial, sans-serif;
+  font-size: 14px;
+  color: var(--text-color);
+  background-color: var(--bg-color);
+  -webkit-font-smoothing: antialiased;
+}
+
+/* 布局样式 */
+.app-container {
+  padding: 20px;
+}
+
+.el-card {
+  margin-bottom: 20px;
+}
+
+/* 数据统计卡片 */
+.stat-card {
+  height: 100px;
+  display: flex;
+  align-items: center;
+  
+  .icon {
+    font-size: 48px;
+    width: 80px;
+    text-align: center;
+  }
+  
+  .content {
+    flex: 1;
+    
+    .title {
+      font-size: 14px;
+      color: #909399;
+    }
+    
+    .value {
+      font-size: 24px;
+      font-weight: bold;
+      margin-top: 5px;
+    }
+  }
+}
