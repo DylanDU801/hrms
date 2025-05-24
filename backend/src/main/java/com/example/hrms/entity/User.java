@@ -1,27 +1,66 @@
 package com.example.hrms.entity;
 
 import jakarta.persistence.*;
+import lombok.Data;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.util.Set;
 
+// 更新的用户实体 - 支持RBAC
 @Entity
+@Data
+@Table(name = "users")
 public class User {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
+    @Column(nullable = false, unique = true, length = 50)
     private String username;
+    
+    @Column(nullable = false, length = 255)
     private String password;
+    
+    @Column(length = 100)
     private String email;
-
-    // Getter 和 Setter 方法，右键生成即可
-    public Long getId() { return id; }
-    public void setId(Long id) { this.id = id; }
-
-    public String getUsername() { return username; }
-    public void setUsername(String username) { this.username = username; }
-
-    public String getPassword() { return password; }
-    public void setPassword(String password) { this.password = password; }
-
-    public String getEmail() { return email; }
-    public void setEmail(String email) { this.email = email; }
+    
+    @Column(nullable = false)
+    private Boolean enabled = true;
+    
+    // 账户是否未过期
+    @Column(nullable = false)
+    private Boolean accountNonExpired = true;
+    
+    // 账户是否未锁定
+    @Column(nullable = false) 
+    private Boolean accountNonLocked = true;
+    
+    // 密码是否未过期
+    @Column(nullable = false)
+    private Boolean credentialsNonExpired = true;
+    
+    // 最后登录时间
+    private LocalDateTime lastLoginTime;
+    
+    // 最后登录IP
+    private String lastLoginIp;
+    
+    @Column(updatable = false)
+    private LocalDateTime createdTime = LocalDateTime.now();
+    
+    private LocalDateTime updatedTime = LocalDateTime.now();
+    
+    // 用户拥有的角色
+    @ManyToMany(fetch = FetchType.LAZY)
+    @JoinTable(
+        name = "user_roles",
+        joinColumns = @JoinColumn(name = "user_id"),
+        inverseJoinColumns = @JoinColumn(name = "role_id")
+    )
+    private Set<Role> roles;
+    
+    @PreUpdate
+    private void preUpdate() {
+        this.updatedTime = LocalDateTime.now();
+    }
 }
