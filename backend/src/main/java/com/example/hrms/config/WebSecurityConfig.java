@@ -16,14 +16,12 @@ public class WebSecurityConfig {
         http
             .csrf(csrf -> csrf.disable())
             .authorizeHttpRequests(authz -> authz
-                .requestMatchers("/user/login", "/user/register").permitAll()
-                .requestMatchers("/v3/api-docs/**", "/swagger-ui/**", "/swagger-ui.html").permitAll()
-                .anyRequest().permitAll()  // 暂时允许所有请求，实际项目中应根据角色授权
+                .anyRequest().permitAll()  // 临时完全放开
             )
             .sessionManagement(session -> session
-                .sessionCreationPolicy(SessionCreationPolicy.STATELESS)
+             .sessionCreationPolicy(SessionCreationPolicy.STATELESS)
             );
-        
+    
         return http.build();
     }
 }
