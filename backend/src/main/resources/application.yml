@@ -19,6 +19,14 @@ spring:
         connection:
           characterEncoding: utf8
           useUnicode: true
+  # CORS 配置
+  web:
+    cors:
+      allowed-origins: "http://localhost:8081,http://localhost:9527,http://127.0.0.1:8081,http://127.0.0.1:9527"
+      allowed-methods: "GET,POST,PUT,DELETE,OPTIONS"
+      allowed-headers: "*"
+      allow-credentials: true
+      max-age: 3600
         
 # 日志配置
 logging:
@@ -26,6 +34,8 @@ logging:
     org.springdoc: DEBUG
     org.springframework.web: DEBUG
     org.springframework.security: DEBUG
+    org.springframework.web.cors: DEBUG
+    org.springframework.security.web.access: DEBUG
     root: INFO
     com.example.hrms: DEBUG
 
