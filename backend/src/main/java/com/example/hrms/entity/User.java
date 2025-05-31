@@ -1,14 +1,19 @@
 package com.example.hrms.entity;
 
 import jakarta.persistence.*;
-import lombok.Data;
-import java.time.LocalDate;
+import lombok.Getter;
+import lombok.Setter;
+import lombok.NoArgsConstructor;
+
 import java.time.LocalDateTime;
+import java.util.Objects;
 import java.util.Set;
 
-// 更新的用户实体 - 支持RBAC
+// 更新的用户实体 - 支持RBAC，移除@Data注解
 @Entity
-@Data
+@Getter
+@Setter
+@NoArgsConstructor
 @Table(name = "users")
 public class User {
     @Id
@@ -51,7 +56,7 @@ public class User {
     private LocalDateTime updatedTime = LocalDateTime.now();
     
     // 用户拥有的角色
-    @ManyToMany(fetch = FetchType.LAZY)
+    @ManyToMany(fetch = FetchType.LAZY, cascade = CascadeType.MERGE)
     @JoinTable(
         name = "user_roles",
         joinColumns = @JoinColumn(name = "user_id"),
@@ -62,5 +67,29 @@ public class User {
     @PreUpdate
     private void preUpdate() {
         this.updatedTime = LocalDateTime.now();
+    }
+    
+    // 重写equals和hashCode，只使用id字段
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        User user = (User) o;
+        return Objects.equals(id, user.id);
+    }
+    
+    @Override
+    public int hashCode() {
+        return Objects.hash(id);
+    }
+    
+    @Override
+    public String toString() {
+        return "User{" +
+                "id=" + id +
+                ", username='" + username + '\'' +
+                ", email='" + email + '\'' +
+                ", enabled=" + enabled +
+                '}';
     }
 }

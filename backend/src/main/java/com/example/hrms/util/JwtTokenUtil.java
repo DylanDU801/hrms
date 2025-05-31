@@ -7,6 +7,8 @@ import io.jsonwebtoken.security.Keys;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
+import javax.crypto.SecretKey;
+import java.nio.charset.StandardCharsets;
 import java.security.Key;
 import java.util.Date;
 import java.util.HashMap;
@@ -19,11 +21,17 @@ public class JwtTokenUtil {
     // 令牌过期时间 - 24小时
     public static final long JWT_TOKEN_VALIDITY = 24 * 60 * 60 * 1000;
 
-    @Value("${jwt.secret:defaultsecret}")
+    @Value("${jwt.secret:hrms_jwt_secret_key_2025_very_long_and_secure_for_hs512_algorithm_minimum_512_bits_required}")
     private String secret;
 
     private Key getSigningKey() {
-        byte[] keyBytes = secret.getBytes();
+        // 确保密钥长度足够，如果不够则使用默认的安全密钥
+        if (secret.getBytes(StandardCharsets.UTF_8).length < 64) {
+            // 生成一个足够长的密钥（至少64字节=512位）
+            secret = "hrms_jwt_secret_key_2025_very_long_and_secure_for_hs512_algorithm_minimum_512_bits_required_padding_to_ensure_sufficient_length";
+        }
+        
+        byte[] keyBytes = secret.getBytes(StandardCharsets.UTF_8);
         return Keys.hmacShaKeyFor(keyBytes);
     }
 
@@ -75,7 +83,11 @@ public class JwtTokenUtil {
 
     // 验证令牌
     public Boolean validateToken(String token, String username) {
-        final String tokenUsername = getUsernameFromToken(token);
-        return (tokenUsername.equals(username) && !isTokenExpired(token));
+        try {
+            final String tokenUsername = getUsernameFromToken(token);
+            return (tokenUsername.equals(username) && !isTokenExpired(token));
+        } catch (Exception e) {
+            return false;
+        }
     }
 }

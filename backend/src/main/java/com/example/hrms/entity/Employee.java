@@ -1,14 +1,19 @@
 package com.example.hrms.entity;
 
 import jakarta.persistence.*;
-import lombok.Data;
+import lombok.Getter;
+import lombok.Setter;
+import lombok.NoArgsConstructor;
+
 import java.time.LocalDate;
 import java.time.LocalDateTime;
-import java.util.Set;
+import java.util.Objects;
 
-// 更新的员工实体 - 包含更多字段
+// 更新的员工实体 - 包含更多字段，移除@Data避免循环引用
 @Entity
-@Data
+@Getter
+@Setter
+@NoArgsConstructor
 @Table(name = "employees")
 public class Employee {
     @Id
@@ -29,19 +34,19 @@ public class Employee {
     @Column(length = 20)
     private EmployeeType employeeType = EmployeeType.FULL_TIME;
     
-    // 所属部门
+    // 所属部门 - 明确指定外键列名
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "department_id")
+    @JoinColumn(name = "department_id", referencedColumnName = "id")
     private Department department;
     
     // 对应的系统用户
     @OneToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "user_id")
+    @JoinColumn(name = "user_id", referencedColumnName = "id")
     private User user;
     
     // 直属上级
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "manager_id")
+    @JoinColumn(name = "manager_id", referencedColumnName = "id")
     private Employee manager;
     
     // 入职日期
@@ -68,6 +73,31 @@ public class Employee {
     @PreUpdate
     private void preUpdate() {
         this.updatedTime = LocalDateTime.now();
+    }
+    
+    // 重写equals和hashCode，只使用id字段
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        Employee employee = (Employee) o;
+        return Objects.equals(id, employee.id);
+    }
+    
+    @Override
+    public int hashCode() {
+        return Objects.hash(id);
+    }
+    
+    @Override
+    public String toString() {
+        return "Employee{" +
+                "id=" + id +
+                ", name='" + name + '\'' +
+                ", email='" + email + '\'' +
+                ", position='" + position + '\'' +
+                ", employeeNumber='" + employeeNumber + '\'' +
+                '}';
     }
     
     public enum EmployeeType {
