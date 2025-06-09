@@ -13,4 +13,6 @@ public interface EmployeeRepository extends JpaRepository<Employee, Long> {
 
     //条件查询
     Page<Employee> findByNameContaining(String keyword, Pageable pageable);
+
+    Employee findEmployeeByUserId(Long id);
 }

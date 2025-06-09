@@ -1,0 +1,246 @@
+@startuml
+' 用户、角色、权限、岗位、部门
+class User {
+  +Long id
+  +String username
+  +String password
+  +String realName
+  +String gender
+  +String phone
+  +String email
+  +String idCard
+  +Date birthday
+  +Date hireDate
+  +int status
+  +login(pwd: String): Boolean
+  +resetPassword(): void
+  +modifyInfo(info): void
+  +applyLeave(leave: Leave): void
+  +applyResign(): void
+  +applyOvertime(overtime): void
+  +viewSalarySlips(): List<SalarySlip>
+  +viewAnnouncements(): List<Announcement>
+}
+
+class Role {
+  +Long id
+  +String name
+  +String remark
+  +assignPermission(p: Permission): void
+  +removePermission(p: Permission): void
+  +listPermissions(): List<Permission>
+}
+
+class Permission {
+  +Long id
+  +String name
+  +String code
+  +int type
+  +String url
+  +checkAccess(user: User): Boolean
+}
+
+class Position {
+  +Long id
+  +String name
+  +int level
+  +String remark
+}
+
+class Department {
+  +Long id
+  +String name
+  +Long parentId
+  +String remark
+}
+
+' 多对多关系
+User "0..*" -- "0..*" Role : UserRole
+Role "0..*" -- "0..*" Permission : RolePermission
+User "0..*" -- "1" Position
+User "0..*" -- "1" Department
+
+' 客户关系
+class Customer {
+  +Long id
+  +String name
+  +String contactPerson
+  +String contactPhone
+  +String address
+  +String email
+  +int status
+  +listEmployees(): List<User>
+}
+User "0..*" -- "0..*" Customer : UserCustomer
+
+' 合同、审批、文件
+class Contract {
+  +Long id
+  +String contractNo
+  +User user
+  +Customer customer
+  +String type
+  +int status
+  +File file
+  +Date startDate
+  +Date endDate
+  +approve(flow: ApprovalFlow): void
+  +sign(): void
+  +terminate(): void
+  +downloadFile(): File
+}
+
+class ApprovalFlow {
+  +Long id
+  +String businessType
+  +Long relatedId
+  +int status
+  +int currentNode
+  +start(): void
+  +approve(user: User): void
+  +reject(user: User): void
+  +getHistory(): List<ApprovalNode>
+}
+
+class ApprovalNode {
+  +Long id
+  +ApprovalFlow flow
+  +int order
+  +User approver
+  +int status
+  +String comment
+  +Date handleTime
+}
+
+class File {
+  +Long id
+  +String fileName
+  +String filePath
+  +String fileType
+  +User uploadUser
+  +Date uploadTime
+  +download(): Stream
+}
+
+Contract "1" -- "0..*" ApprovalFlow
+ApprovalFlow "1" -- "0..*" ApprovalNode
+User "1" -- "0..*" Contract
+Customer "1" -- "0..*" Contract
+
+' 薪酬、社保、保险
+class SalarySlip {
+  +Long id
+  +User user
+  +String month
+  +BigDecimal baseSalary
+  +BigDecimal allowance
+  +BigDecimal bonus
+  +BigDecimal deduction
+  +BigDecimal actualSalary
+  +int payStatus
+  +download(): File
+  +sendToUser(): void
+}
+
+class SocialInsurance {
+  +Long id
+  +User user
+  +String insuranceType
+  +Date joinDate
+  +Date leaveDate
+  +int status
+}
+
+class CommercialInsurance {
+  +Long id
+  +User user
+  +String company
+  +String policyNo
+  +BigDecimal insuredAmount
+  +Date startDate
+  +Date endDate
+  +int status
+}
+
+User "1" -- "0..*" SalarySlip
+User "1" -- "0..*" SocialInsurance
+User "1" -- "0..*" CommercialInsurance
+
+' 公告、消息、考勤、请假、日志
+class Announcement {
+  +Long id
+  +String title
+  +String content
+  +User creator
+  +Date createTime
+  +publish(): void
+}
+
+class AnnouncementReceive {
+  +Long id
+  +Announcement announcement
+  +User user
+  +Date readTime
+}
+
+class Message {
+  +Long id
+  +User user
+  +String content
+  +int type
+  +int readStatus
+  +Date createTime
+  +markAsRead(): void
+}
+
+class Attendance {
+  +Long id
+  +User user
+  +Date attendanceDate
+  +Date checkinTime
+  +Date checkoutTime
+  +int status
+  +checkIn(time: Date): void
+  +checkOut(time: Date): void
+}
+
+class Leave {
+  +Long id
+  +User user
+  +String leaveType
+  +Date startTime
+  +Date endTime
+  +String reason
+  +int status
+  +ApprovalFlow approvalFlow
+  +submit(): void
+  +approve(): void
+  +reject(): void
+}
+
+class LoginLog {
+  +Long id
+  +User user
+  +Date loginTime
+  +String ip
+  +String device
+}
+
+class OperationLog {
+  +Long id
+  +User user
+  +String operation
+  +String detail
+  +Date operateTime
+  +String ip
+}
+
+Announcement "1" -- "0..*" AnnouncementReceive
+User "1" -- "0..*" AnnouncementReceive
+User "1" -- "0..*" Message
+User "1" -- "0..*" Attendance
+User "1" -- "0..*" Leave
+User "1" -- "0..*" LoginLog
+User "1" -- "0..*" OperationLog
+
+@enduml

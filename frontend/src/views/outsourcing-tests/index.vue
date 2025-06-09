@@ -5,7 +5,7 @@
         <span>外包测试管理</span>
         <el-button style="float: right; padding: 3px 0" type="text" @click="handleAdd">创建测试任务</el-button>
       </div>
-      
+
       <!-- 搜索区域 -->
       <div class="filter-container">
         <el-input
@@ -29,7 +29,7 @@
         <el-table-column prop="id" label="ID" width="80"></el-table-column>
         <el-table-column prop="testName" label="测试名称" width="200"></el-table-column>
         <el-table-column prop="description" label="描述" width="250" show-overflow-tooltip></el-table-column>
-        <el-table-column prop="testerName" label="测试人员" width="120"></el-table-column>
+        <el-table-column prop="tester.name" label="测试人员" width="120"></el-table-column>
         <el-table-column prop="status" label="状态" width="100">
           <template slot-scope="scope">
             <el-tag :type="getStatusType(scope.row.status)">{{ getStatusText(scope.row.status) }}</el-tag>
@@ -47,19 +47,19 @@
           <template slot-scope="scope">
             <el-button size="mini" type="primary" @click="handleDetail(scope.row)">详情</el-button>
             <el-button size="mini" type="success" @click="handleEdit(scope.row)" v-if="scope.row.status === 'PENDING'">编辑</el-button>
-            <el-button size="mini" type="warning" @click="handleAssign(scope.row)" v-if="scope.row.status === 'PENDING'">分配</el-button>
+<!--            <el-button size="mini" type="warning" @click="handleAssign(scope.row)" v-if="scope.row.status === 'PENDING'">分配</el-button>-->
             <el-button size="mini" type="info" @click="handleReview(scope.row)" v-if="scope.row.status === 'SUBMITTED'">审核</el-button>
           </template>
         </el-table-column>
       </el-table>
 
       <!-- 分页 -->
-      <pagination 
-        v-show="total > 0" 
-        :total="total" 
-        :page.sync="listQuery.page" 
-        :limit.sync="listQuery.limit" 
-        @pagination="getList" 
+      <pagination
+        v-show="total > 0"
+        :total="total"
+        :page.sync="listQuery.page"
+        :limit.sync="listQuery.size"
+        @pagination="getList"
       />
     </el-card>
 
@@ -78,6 +78,16 @@
             <el-option label="中" value="MEDIUM"></el-option>
             <el-option label="高" value="HIGH"></el-option>
             <el-option label="紧急" value="URGENT"></el-option>
+          </el-select>
+        </el-form-item>
+        <el-form-item label="测试人员">
+          <el-select v-model="temp.tester.id" class="filter-item" placeholder="请选择">
+            <el-option
+                v-for="item in employeesOptions"
+                :key="item.id"
+                :label="item.name"
+                :value="item.id"
+            />
           </el-select>
         </el-form-item>
         <el-form-item label="预计工时" prop="estimatedHours">
@@ -149,30 +159,36 @@
 
 <script>
 import Pagination from '@/components/Pagination'
+import { fetchTests, fetchTest, createTest, updateTest, deleteTest, assignTest, submitTestResult, reviewTest, getMyTests, getTestStatistics, getTesterPerformance } from '@/api/outsourcing-test'
+import {fetchList} from "@/api/employee";
 
 export default {
   name: 'OutsourcingTests',
   components: { Pagination },
   data() {
     return {
+      employeesOptions:[],
       tableKey: 0,
       list: [],
       total: 0,
       listLoading: true,
       listQuery: {
-        page: 0,
-        limit: 20,
+        page: 1,
+        size: 20,
         keyword: undefined,
         status: undefined
       },
       temp: {
-        id: undefined,
+        id: '',
         testName: '',
         description: '',
         priority: 'MEDIUM',
         estimatedHours: 8,
         startTime: '',
-        endTime: ''
+        endTime: '',
+        tester:{
+          id:''
+        }
       },
       assignTemp: {
         testId: undefined,
@@ -206,55 +222,57 @@ export default {
   },
   created() {
     this.getList()
+    this.getfetchListList()
   },
   methods: {
+    getfetchListList(){
+      fetchList({page: 1, size: 2000}).then(response => {
+        console.log(response)
+
+        this.employeesOptions = response.content
+      }).catch((error) => {
+        console.log(error)
+      })
+
+    },
     getList() {
       this.listLoading = true
-      // 模拟数据
-      setTimeout(() => {
+      fetchTests(this.listQuery).then(response => {
+        console.log("response",response)
+        if (Array.isArray(response.content)) {
+          this.list = response.content
+          this.total = response.totalElements
+        } else {
+          this.list = response.content || response || []
+          this.total = response.totalElements
+        }
+        this.listLoading = false
+      }).catch((error) => {
+        console.log(error)
+        this.listLoading = false
+        // 如果API失败，使用模拟数据
         this.list = [
-          {
-            id: 1,
-            testName: '用户登录功能测试',
-            description: '测试用户登录、注册、密码重置等核心功能',
-            testerName: '张测试',
-            status: 'IN_PROGRESS',
-            priority: 'HIGH',
-            estimatedHours: 16,
-            actualHours: null,
-            score: null,
-            result: null
-          },
-          {
-            id: 2,
-            testName: '员工管理模块测试',
-            description: '测试员工增删改查、部门分配等功能',
-            testerName: '李测试',
-            status: 'COMPLETED',
-            priority: 'MEDIUM',
-            estimatedHours: 24,
-            actualHours: 20,
-            score: 85,
-            result: '测试完成，发现3个小问题已修复'
-          }
+          { id: 1, name: '张三', email: 'zhangsan@example.com', position: '前端工程师', departmentName: '研发部' },
+          { id: 2, name: '李四', email: 'lisi@example.com', position: '后端工程师', departmentName: '研发部' }
         ]
         this.total = 2
-        this.listLoading = false
-      }, 1000)
+      })
     },
     handleFilter() {
-      this.listQuery.page = 0
       this.getList()
     },
     resetTemp() {
       this.temp = {
-        id: undefined,
+        id: '',
         testName: '',
         description: '',
         priority: 'MEDIUM',
         estimatedHours: 8,
         startTime: '',
-        endTime: ''
+        endTime: '',
+        tester:{
+          id:''
+        }
       }
     },
     handleAdd() {
@@ -291,24 +309,57 @@ export default {
     createData() {
       this.$refs['dataForm'].validate(valid => {
         if (valid) {
-          this.$message({
-            message: '创建成功',
-            type: 'success'
+
+          createTest(this.temp).then(() => {
+            this.list.unshift(this.temp)
+            this.dialogFormVisible = false
+            this.$notify({
+              title: '成功',
+              message: '创建成功',
+              type: 'success',
+              duration: 2000
+            })
+            this.dialogFormVisible = false
+            this.getList()
+          }).catch((e) => {
+            console.log(e)
+            this.$notify({
+              title: '错误',
+              message: '创建失败',
+              type: 'error',
+              duration: 2000
+            })
+            this.dialogFormVisible = false
+            this.getList()
           })
-          this.dialogFormVisible = false
-          this.getList()
         }
       })
     },
     updateData() {
       this.$refs['dataForm'].validate(valid => {
         if (valid) {
-          this.$message({
-            message: '更新成功',
-            type: 'success'
+          const tempData = Object.assign({}, this.temp)
+          updateTest(tempData.id, tempData).then(() => {
+            const index = this.list.findIndex(v => v.id === this.temp.id)
+            this.list.splice(index, 1, this.temp)
+            this.dialogFormVisible = false
+            this.getList()
+            this.$notify({
+              title: '成功',
+              message: '更新成功',
+              type: 'success',
+              duration: 2000
+            })
+          }).catch(() => {
+            this.$notify({
+              title: '错误',
+              message: '更新失败',
+              type: 'error',
+              duration: 2000
+            })
+            this.dialogFormVisible = false
+            this.getList()
           })
-          this.dialogFormVisible = false
-          this.getList()
         }
       })
     },

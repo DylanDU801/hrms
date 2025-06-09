@@ -1,5 +1,13 @@
 import request from '@/utils/request'
 
+export function fetchUserList(query) {
+  return request({
+    url: '/employees/unbound-users',
+    method: 'get',
+    params:query
+  })
+}
+
 export function fetchList(query) {
   return request({
     url: '/employees/page',

@@ -1,5 +1,7 @@
 package com.example.hrms.config;
 
+import com.example.hrms.entity.User;
+import com.example.hrms.repository.UserRepository;
 import com.example.hrms.util.JwtTokenUtil;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
@@ -16,6 +18,7 @@ import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
 
 import java.io.IOException;
+import java.util.Optional;
 
 /**
  * JWT认证过滤器
@@ -28,49 +31,53 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
     private final JwtTokenUtil jwtTokenUtil;
     private final UserDetailsService userDetailsService;
+    private final UserRepository userRepository;
 
     @Override
-    protected void doFilterInternal(HttpServletRequest request, 
-                                  HttpServletResponse response, 
+    protected void doFilterInternal(HttpServletRequest request,
+                                  HttpServletResponse response,
                                   FilterChain chain) throws ServletException, IOException {
-        
+
         final String requestTokenHeader = request.getHeader("Authorization");
-        
+
         String username = null;
         String jwtToken = null;
-        
+
         // JWT Token在请求头中，格式为 "Bearer token"
         if (requestTokenHeader != null && requestTokenHeader.startsWith("Bearer ")) {
             jwtToken = requestTokenHeader.substring(7);
             try {
                 username = jwtTokenUtil.getUsernameFromToken(jwtToken);
+                Optional<User> byUsername = userRepository.findByUsername(username);
+                User user = byUsername.get();
+                UserContext.setUser(user);
             } catch (Exception e) {
-                log.warn("无法获取JWT Token中的用户名: {}", e.getMessage());
+//                log.warn("无法获取JWT Token中的用户名: {}", e.getMessage());
             }
         } else {
-            log.debug("JWT Token不以Bearer字符串开头");
+//            log.debug("JWT Token不以Bearer字符串开头");
         }
-        
+
         // 验证token
         if (username != null && SecurityContextHolder.getContext().getAuthentication() == null) {
-            
+
             UserDetails userDetails = this.userDetailsService.loadUserByUsername(username);
-            
+
             // 如果token有效，配置Spring Security手动设置认证
             if (jwtTokenUtil.validateToken(jwtToken, userDetails.getUsername())) {
-                
-                UsernamePasswordAuthenticationToken usernamePasswordAuthenticationToken = 
+
+                UsernamePasswordAuthenticationToken usernamePasswordAuthenticationToken =
                     new UsernamePasswordAuthenticationToken(
                         userDetails, null, userDetails.getAuthorities());
-                        
+
                 usernamePasswordAuthenticationToken
                     .setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
-                    
+
                 // 设置认证信息到Spring Security上下文中
                 SecurityContextHolder.getContext().setAuthentication(usernamePasswordAuthenticationToken);
             }
         }
-        
+
         chain.doFilter(request, response);
     }
 }

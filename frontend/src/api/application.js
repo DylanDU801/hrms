@@ -15,20 +15,11 @@ export function fetchApplication(id) {
   })
 }
 
-export function submitApplication(data, attachment) {
-  const formData = new FormData()
-  formData.append('application', new Blob([JSON.stringify(data)], { type: 'application/json' }))
-  if (attachment) {
-    formData.append('attachment', attachment)
-  }
-  
+export function submitApplication(data) {
   return request({
     url: '/api/applications',
     method: 'post',
-    data: formData,
-    headers: {
-      'Content-Type': 'multipart/form-data'
-    }
+    data: data
   })
 }
 

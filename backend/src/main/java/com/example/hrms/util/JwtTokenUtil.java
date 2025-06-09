@@ -30,7 +30,7 @@ public class JwtTokenUtil {
             // 生成一个足够长的密钥（至少64字节=512位）
             secret = "hrms_jwt_secret_key_2025_very_long_and_secure_for_hs512_algorithm_minimum_512_bits_required_padding_to_ensure_sufficient_length";
         }
-        
+
         byte[] keyBytes = secret.getBytes(StandardCharsets.UTF_8);
         return Keys.hmacShaKeyFor(keyBytes);
     }
@@ -51,7 +51,7 @@ public class JwtTokenUtil {
     }
 
     // 获取JWT的所有数据
-    private Claims getAllClaimsFromToken(String token) {
+    public Claims getAllClaimsFromToken(String token) {
         return Jwts.parserBuilder()
                 .setSigningKey(getSigningKey())
                 .build()

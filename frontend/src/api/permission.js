@@ -43,3 +43,11 @@ export function getPermissionsByResource() {
     method: 'get'
   })
 }
+
+export function updateRolePermissions(roleId, permissionIds) {
+  return request({
+    url: `/api/roles/${roleId}/permissions`,
+    method: 'post',
+    data: permissionIds
+  })
+}

@@ -24,49 +24,49 @@ public class DataInitializer implements CommandLineRunner {
 
     @Override
     public void run(String... args) throws Exception {
-        log.info("=================================");
-        log.info("开始执行系统数据初始化...");
-        log.info("=================================");
-        
+//        log.info("=================================");
+//        log.info("开始执行系统数据初始化...");
+//        log.info("=================================");
+
         try {
             // 1. 首先初始化权限数据（基础数据）
             permissionInitializer.initPermissions();
-            
+
             // 2. 然后初始化角色数据（依赖权限）
             roleInitializer.initRoles();
-            
+
             // 3. 初始化部门数据（独立数据）
             departmentInitializer.initDepartments();
-            
+
             // 4. 最后初始化用户数据（依赖角色和部门）
             userInitializer.initUsers();
-            
-            log.info("=================================");
-            log.info("系统数据初始化完成！");
-            log.info("=================================");
-            
+
+//            log.info("=================================");
+//            log.info("系统数据初始化完成！");
+//            log.info("=================================");
+
             printDefaultAccounts();
-            
+
         } catch (Exception e) {
-            log.error("数据初始化失败: ", e);
+//            log.error("数据初始化失败: ", e);
             throw e;
         }
     }
-    
+
     /**
      * 打印默认账号信息
      */
     private void printDefaultAccounts() {
-        log.info("");
-        log.info("=============== 默认账号信息 ===============");
-        log.info("系统管理员: admin / 123456");
-        log.info("人事专员: hr001 / 123456");
-        log.info("项目经理: pm001 / 123456");
-        log.info("外包测试: tester001 / 123456");
-        log.info("普通员工: emp001 / 123456");
-        log.info("========================================");
-        log.info("Swagger文档地址: http://localhost:8080/swagger-ui.html");
-        log.info("========================================");
-        log.info("");
+//        log.info("");
+//        log.info("=============== 默认账号信息 ===============");
+//        log.info("系统管理员: admin / 123456");
+//        log.info("人事专员: hr001 / 123456");
+//        log.info("项目经理: pm001 / 123456");
+//        log.info("外包测试: tester001 / 123456");
+//        log.info("普通员工: emp001 / 123456");
+//        log.info("========================================");
+//        log.info("Swagger文档地址: http://localhost:8080/swagger-ui.html");
+//        log.info("========================================");
+//        log.info("");
     }
 }

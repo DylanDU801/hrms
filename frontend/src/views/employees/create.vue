@@ -15,7 +15,7 @@
           <el-input v-model="form.position"></el-input>
         </el-form-item>
         <el-form-item label="部门" prop="departmentId">
-          <el-select v-model="form.departmentId" placeholder="请选择部门">
+          <el-select v-model="form.department.id" placeholder="请选择部门">
             <el-option
               v-for="item in departments"
               :key="item.id"
@@ -42,7 +42,9 @@ export default {
         name: '',
         email: '',
         position: '',
-        departmentId: ''
+        department: {
+          id:''
+        }
       },
       departments: [
         { id: 1, name: '研发部' },

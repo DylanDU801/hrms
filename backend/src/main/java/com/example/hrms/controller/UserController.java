@@ -15,9 +15,18 @@ public class UserController {
         this.userRepository = userRepository;
     }
 
-    // 查询所有用户
+    // 查询所有用户（支持按用户名关键字和状态筛选）
     @GetMapping
-    public List<User> list() {
+    public List<User> list(
+            @RequestParam(required = false) String keyword,
+            @RequestParam(required = false) Boolean enabled) {
+        if (keyword != null && enabled != null) {
+            return userRepository.findByUsernameContainingAndEnabled(keyword, enabled);
+        } else if (keyword != null) {
+            return userRepository.findByUsernameContaining(keyword);
+        } else if (enabled != null) {
+            return userRepository.findByEnabled(enabled);
+        }
         return userRepository.findAll();
     }
 
@@ -47,8 +56,19 @@ public class UserController {
                 user.setUsername(newUser.getUsername());
                 user.setPassword(newUser.getPassword());
                 user.setEmail(newUser.getEmail());
+                user.setEnabled(newUser.getEnabled());
                 return userRepository.save(user);
             })
             .orElse(null);
+    }
+
+    @PutMapping("/toggle-status")
+    public User updateUser( @RequestBody User newUser) {
+        return userRepository.findById(newUser.getId())
+                .map(user -> {
+                    user.setEnabled(newUser.getEnabled());
+                    return userRepository.save(user);
+                })
+                .orElse(null);
     }
 }

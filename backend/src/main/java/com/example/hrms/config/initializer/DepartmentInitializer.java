@@ -10,17 +10,17 @@ import org.springframework.stereotype.Component;
 @RequiredArgsConstructor
 @Slf4j
 public class DepartmentInitializer {
-    
+
     private final DepartmentRepository departmentRepository;
-    
+
     public void initDepartments() {
         if (departmentRepository.count() > 0) {
-            log.info("部门数据已存在，跳过初始化");
+//            log.info("部门数据已存在，跳过初始化");
             return;
         }
-        
-        log.info("开始初始化部门数据...");
-        
+
+//        log.info("开始初始化部门数据...");
+
         // 创建基础部门
         createDepartment("人事部", "负责人力资源管理、招聘、薪酬福利等工作");
         createDepartment("研发部", "负责产品研发、技术架构、系统开发等工作");
@@ -30,16 +30,16 @@ public class DepartmentInitializer {
         createDepartment("财务部", "负责财务管理、预算控制、成本分析等工作");
         createDepartment("行政部", "负责行政管理、办公设施、后勤保障等工作");
         createDepartment("销售部", "负责市场销售、客户关系、业务拓展等工作");
-        
-        log.info("部门数据初始化完成，共创建 {} 个部门", departmentRepository.count());
+
+//        log.info("部门数据初始化完成，共创建 {} 个部门", departmentRepository.count());
     }
-    
+
     private void createDepartment(String name, String description) {
         Department department = new Department();
         department.setName(name);
         // 如果Department实体有description字段的话
         // department.setDescription(description);
         departmentRepository.save(department);
-        log.debug("创建部门: {}", name);
+//        log.debug("创建部门: {}", name);
     }
 }

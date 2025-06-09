@@ -1,5 +1,6 @@
 package com.example.hrms.entity;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
@@ -21,26 +22,22 @@ public class Permission {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
-    
+
     @Column(nullable = false, unique = true, length = 50)
     private String name;
-    
+
     @Column(nullable = false, length = 100)
     private String resource;
-    
+
     @Column(nullable = false, length = 50)
     private String action;
-    
+
     @Column(length = 200)
     private String description;
-    
+
     @Column(updatable = false)
     private LocalDateTime createdTime = LocalDateTime.now();
-    
-    // 拥有此权限的角色
-    @ManyToMany(mappedBy = "permissions", fetch = FetchType.LAZY)
-    private Set<Role> roles;
-    
+
     // 构造方法
     public Permission(String name, String resource, String action, String description) {
         this.name = name;
@@ -49,7 +46,7 @@ public class Permission {
         this.description = description;
         this.createdTime = LocalDateTime.now();
     }
-    
+
     // 重写equals和hashCode，只使用id字段，避免懒加载问题
     @Override
     public boolean equals(Object o) {
@@ -58,12 +55,12 @@ public class Permission {
         Permission that = (Permission) o;
         return Objects.equals(id, that.id);
     }
-    
+
     @Override
     public int hashCode() {
         return Objects.hash(id);
     }
-    
+
     @Override
     public String toString() {
         return "Permission{" +

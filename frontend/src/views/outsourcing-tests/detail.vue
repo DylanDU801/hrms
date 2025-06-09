@@ -5,14 +5,14 @@
         <span>测试任务详情</span>
         <el-button style="float: right; padding: 3px 0" type="text" @click="goBack">返回</el-button>
       </div>
-      
+
       <div v-if="testDetail">
         <!-- 基本信息 -->
         <el-descriptions :column="2" border>
           <el-descriptions-item label="任务ID">{{ testDetail.id }}</el-descriptions-item>
           <el-descriptions-item label="任务名称">{{ testDetail.testName }}</el-descriptions-item>
-          <el-descriptions-item label="创建人">{{ testDetail.creatorName }}</el-descriptions-item>
-          <el-descriptions-item label="测试人员">{{ testDetail.testerName }}</el-descriptions-item>
+          <el-descriptions-item label="创建人">{{ testDetail.creator.name }}</el-descriptions-item>
+          <el-descriptions-item label="测试人员">{{ testDetail.tester.name }}</el-descriptions-item>
           <el-descriptions-item label="状态">
             <el-tag :type="getStatusType(testDetail.status)">
               {{ getStatusText(testDetail.status) }}
@@ -44,30 +44,30 @@
 
         <!-- 操作按钮 -->
         <div style="margin-top: 20px; text-align: center;" v-if="showActions">
-          <el-button 
-            type="primary" 
-            @click="handleEdit" 
-            v-if="canEdit"
-          >
-            编辑任务
-          </el-button>
-          <el-button 
-            type="success" 
-            @click="handleAssign" 
-            v-if="canAssign"
-          >
-            分配测试人员
-          </el-button>
-          <el-button 
-            type="warning" 
-            @click="handleSubmit" 
-            v-if="canSubmit"
-          >
-            提交结果
-          </el-button>
-          <el-button 
-            type="info" 
-            @click="handleReview" 
+<!--          <el-button-->
+<!--            type="primary"-->
+<!--            @click="handleEdit"-->
+<!--            v-if="canEdit"-->
+<!--          >-->
+<!--            编辑任务-->
+<!--          </el-button>-->
+<!--          <el-button-->
+<!--            type="success"-->
+<!--            @click="handleAssign"-->
+<!--            v-if="canAssign"-->
+<!--          >-->
+<!--            分配测试人员-->
+<!--          </el-button>-->
+<!--          <el-button-->
+<!--            type="warning"-->
+<!--            @click="handleSubmit"-->
+<!--            v-if="canSubmit"-->
+<!--          >-->
+<!--            提交结果-->
+<!--          </el-button>-->
+          <el-button
+            type="info"
+            @click="handleReview"
             v-if="canReview"
           >
             审核结果
@@ -90,7 +90,7 @@
           </el-timeline>
         </div>
       </div>
-      
+
       <div v-else v-loading="loading" style="height: 200px;">
         <div style="display: flex; align-items: center; justify-content: center; height: 100%;">
           加载中...
@@ -183,6 +183,7 @@
 </template>
 
 <script>
+import { fetchTests, fetchTest, createTest, updateTest, deleteTest, assignTest, submitTestResult, reviewTest, getMyTests, getTestStatistics, getTesterPerformance } from '@/api/outsourcing-test'
 export default {
   name: 'TestDetail',
   data() {
@@ -208,6 +209,7 @@ export default {
         actualHours: 0
       },
       reviewTemp: {
+        id:'',
         result: '',
         score: 0,
         comment: ''
@@ -248,29 +250,37 @@ export default {
     getTestDetail() {
       this.loading = true
       const id = this.$route.params.id
-      
-      // 模拟API调用
-      setTimeout(() => {
-        this.testDetail = {
-          id: id,
-          testName: '用户登录功能测试',
-          description: '测试用户登录、注册、密码重置等核心功能，包括正常流程和异常流程的测试。',
-          creatorName: '项目经理',
-          testerName: '张测试',
-          status: 'IN_PROGRESS',
-          priority: 'HIGH',
-          estimatedHours: 16,
-          actualHours: null,
-          score: null,
-          startTime: '2025-05-15 10:30:00',
-          endTime: '2025-05-20 18:00:00',
-          createdTime: '2025-05-14 14:20:00',
-          result: null
-        }
-        
+      console.log("id",id)
+
+      fetchTest(id).then(response => {
+        console.log(response)
+        this.testDetail = response.data
         this.generateTimeline()
-        this.loading = false
-      }, 1000)
+      }).catch((error) => {
+        console.log(error)
+        // 模拟API调用
+        setTimeout(() => {
+          this.testDetail = {
+            id: id,
+            testName: '用户登录功能测试',
+            description: '测试用户登录、注册、密码重置等核心功能，包括正常流程和异常流程的测试。',
+            creatorName: '项目经理',
+            testerName: '张测试',
+            status: 'IN_PROGRESS',
+            priority: 'HIGH',
+            estimatedHours: 16,
+            actualHours: null,
+            score: null,
+            startTime: '2025-05-15 10:30:00',
+            endTime: '2025-05-20 18:00:00',
+            createdTime: '2025-05-14 14:20:00',
+            result: null
+          }
+
+          this.generateTimeline()
+          this.loading = false
+        }, 1000)
+      })
     },
     generateTimeline() {
       this.timeline = [
@@ -281,13 +291,13 @@ export default {
           type: 'primary'
         },
         {
-          content: '分配测试人员: ' + this.testDetail.testerName,
+          content: '分配测试人员: ' + this.testDetail.tester.name,
           timestamp: '2025-05-15 09:00:00',
           icon: 'el-icon-user',
           type: 'success'
         }
       ]
-      
+
       if (this.testDetail.status === 'IN_PROGRESS') {
         this.timeline.push({
           content: '开始测试',
@@ -296,7 +306,7 @@ export default {
           type: 'warning'
         })
       }
-      
+
       if (this.testDetail.status === 'COMPLETED' && this.testDetail.result) {
         this.timeline.push({
           content: '提交测试结果',
@@ -304,7 +314,7 @@ export default {
           icon: 'el-icon-upload',
           type: 'info'
         })
-        
+
         if (this.testDetail.score) {
           this.timeline.push({
             content: `审核完成，得分: ${this.testDetail.score}分`,
@@ -342,7 +352,8 @@ export default {
       this.reviewTemp = {
         result: this.testDetail.result || '',
         score: 0,
-        comment: ''
+        comment: '',
+        id:this.testDetail.id
       }
       this.reviewDialogVisible = true
     },
@@ -387,11 +398,19 @@ export default {
         this.$message.error('请输入得分')
         return
       }
+      reviewTest(this.reviewTemp.id,this.reviewTemp.score,this.reviewTemp.comment).then(response => {
+        this.reviewDialogVisible = false
+        this.getTestDetail()
+      }).catch((error) => {
+        console.log(error)
+        this.reviewDialogVisible = false
+        this.getTestDetail()
+      })
+
       this.$message({
         message: '审核成功',
         type: 'success'
       })
-      this.reviewDialogVisible = false
       this.getTestDetail()
     },
     getStatusType(status) {

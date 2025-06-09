@@ -1,11 +1,15 @@
 package com.example.hrms.controller;
 
+import com.example.hrms.annotation.OperationLog;
 import com.example.hrms.entity.Employee;
 //import org.springframework.http.HttpStatus;
+import com.example.hrms.entity.User;
 import com.example.hrms.repository.EmployeeRepository;
 import com.example.hrms.repository.DepartmentRepository;
 import com.example.hrms.dto.EmployeeDTO;
 
+import com.example.hrms.repository.UserRepository;
+import com.github.pagehelper.PageHelper;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -21,14 +25,48 @@ import java.util.stream.Collectors;
 public class EmployeeController {
     private final EmployeeRepository employeeRepository;
     private final DepartmentRepository departmentRepository;
+    private final UserRepository userRepository;
 
-    public EmployeeController(EmployeeRepository employeeRepository, DepartmentRepository departmentRepository) {
+    public EmployeeController(EmployeeRepository employeeRepository, DepartmentRepository departmentRepository, UserRepository userRepository) {
         this.employeeRepository = employeeRepository;
         this.departmentRepository = departmentRepository;
+        this.userRepository = userRepository;
+    }
+
+    // 新增：查询未绑定员工的用户列表
+    @GetMapping("/unbound-users")
+    @OperationLog("查询未绑定员工的用户列表")
+    public List<User> getUnboundUsers(Long id) {
+        // 获取所有用户
+        List<User> allUsers = userRepository.findAll();
+        // 获取已绑定员工的用户ID（假设员工表有 userId 字段）
+        List<Employee> all = employeeRepository.findAll();
+
+        List<Long> boundUserIds = all
+                .stream()
+                .map(employee -> {
+                    User user = employee.getUser();
+                    if(user!=null&&!employee.getId().equals(id)){
+                        return user.getId();
+                    }
+                    return null;
+                }) // 需根据实际字段名调整
+                .toList();
+        // 过滤出未绑定的用户
+
+        List<User> list = allUsers.stream()
+                .filter(user -> !boundUserIds.contains(user.getId()))
+                .toList();
+        for (User user : list) {
+            user.setRoles(null);
+        }
+
+        return list;
     }
 
     // 1. 查询所有员工（返回DTO列表，不分页）
     @GetMapping
+    @OperationLog("查询所有员工")
     public List<EmployeeDTO> list() {
         return employeeRepository.findAll().stream().map(emp -> {
             EmployeeDTO dto = new EmployeeDTO();
@@ -45,12 +83,13 @@ public class EmployeeController {
 
     // 2. 分页查询员工（可选模糊搜索，返回DTO分页对象）
     @GetMapping("/page")
+    @OperationLog("分页查询员工")
     public Page<EmployeeDTO> page(
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "10") int size,
             @RequestParam(defaultValue = "") String keyword
     ) {
-        Pageable pageable = PageRequest.of(page, size, Sort.by("id").descending());
+        Pageable pageable = PageRequest.of(page-1, size);
         Page<Employee> employeePage;
         if (keyword == null || keyword.isEmpty()) {
             employeePage = employeeRepository.findAll(pageable);
@@ -66,6 +105,11 @@ public class EmployeeController {
             dto.setPosition(emp.getPosition());
             if (emp.getDepartment() != null) {
                 dto.setDepartmentName(emp.getDepartment().getName());
+                dto.setDepartmentId(emp.getDepartment().getId());
+            }
+            if (emp.getUser() != null) {
+                dto.setUsername(emp.getUser().getUsername());
+                dto.setUserId(emp.getUser().getId());
             }
             return dto;
         });
@@ -89,6 +133,7 @@ public class EmployeeController {
 
     // 4. 查询单个员工（返回DTO）
     @GetMapping("/{id}")
+    @OperationLog("查询单个员工")
     public EmployeeDTO get(@PathVariable Long id) {
         return employeeRepository.findById(id)
                 .map(emp -> {
@@ -107,18 +152,20 @@ public class EmployeeController {
 
     // 5. 新增员工（指定部门ID）
     @PostMapping
-    public Employee create(@RequestBody Employee employee) {
+    @OperationLog("新增员工")
+    public void create(@RequestBody Employee employee) {
         if (employee.getDepartment() != null && employee.getDepartment().getId() != null) {
             departmentRepository.findById(employee.getDepartment().getId())
                     .ifPresent(employee::setDepartment);
         }
-        return employeeRepository.save(employee);
+        employeeRepository.save(employee);
     }
 
     // 6. 修改员工信息
     @PutMapping("/{id}")
-    public Employee update(@PathVariable Long id, @RequestBody Employee newEmp) {
-        return employeeRepository.findById(id)
+    @OperationLog("修改员工信息")
+    public void update(@PathVariable Long id, @RequestBody Employee newEmp) {
+        employeeRepository.findById(id)
                 .map(emp -> {
                     emp.setName(newEmp.getName());
                     emp.setEmail(newEmp.getEmail());
@@ -126,6 +173,10 @@ public class EmployeeController {
                     if (newEmp.getDepartment() != null && newEmp.getDepartment().getId() != null) {
                         departmentRepository.findById(newEmp.getDepartment().getId())
                                 .ifPresent(emp::setDepartment);
+                    }
+                    if (newEmp.getUser() != null && newEmp.getUser().getId() != null) {
+                        userRepository.findById(newEmp.getUser().getId())
+                                .ifPresent(emp::setUser);
                     }
                     return employeeRepository.save(emp);
                 }).orElse(null);

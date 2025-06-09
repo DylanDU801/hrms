@@ -1,5 +1,6 @@
 package com.example.hrms.entity;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
@@ -21,32 +22,28 @@ public class Role {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
-    
+
     @Column(nullable = false, unique = true, length = 50)
     private String name;
-    
+
     @Column(length = 200)
     private String description;
-    
+
     @Column(nullable = false)
     private Boolean enabled = true;
-    
+
     @Column(updatable = false)
     private LocalDateTime createdTime = LocalDateTime.now();
-    
+
     // 角色拥有的权限
-    @ManyToMany(fetch = FetchType.LAZY, cascade = CascadeType.MERGE)
+    @ManyToMany(fetch = FetchType.LAZY)
     @JoinTable(
         name = "role_permissions",
         joinColumns = @JoinColumn(name = "role_id"),
         inverseJoinColumns = @JoinColumn(name = "permission_id")
     )
     private Set<Permission> permissions;
-    
-    // 拥有此角色的用户
-    @ManyToMany(mappedBy = "roles", fetch = FetchType.LAZY)
-    private Set<User> users;
-    
+
     // 重写equals和hashCode，只使用id字段
     @Override
     public boolean equals(Object o) {
@@ -55,12 +52,12 @@ public class Role {
         Role role = (Role) o;
         return Objects.equals(id, role.id);
     }
-    
+
     @Override
     public int hashCode() {
         return Objects.hash(id);
     }
-    
+
     @Override
     public String toString() {
         return "Role{" +

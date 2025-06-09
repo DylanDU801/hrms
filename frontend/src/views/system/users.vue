@@ -1,4 +1,3 @@
-<!-- frontend/src/views/system/users.vue -->
 <template>
   <div class="users-container">
     <el-card class="box-card">
@@ -6,14 +5,15 @@
         <span>用户管理</span>
         <el-button style="float: right; padding: 3px 0" type="text" @click="handleAdd">添加用户</el-button>
       </div>
-      
+
       <!-- 搜索区域 -->
       <div class="filter-container">
         <el-input
           v-model="listQuery.keyword"
-          placeholder="搜索用户名或邮箱"
+          placeholder="搜索用户名"
           style="width: 200px;"
           class="filter-item"
+          clearable
           @keyup.enter.native="handleFilter"
         />
         <el-select v-model="listQuery.enabled" placeholder="状态" clearable style="width: 120px" class="filter-item">
@@ -28,23 +28,18 @@
         <el-table-column prop="id" label="ID" width="80"></el-table-column>
         <el-table-column prop="username" label="用户名" width="150"></el-table-column>
         <el-table-column prop="email" label="邮箱" width="200"></el-table-column>
-        <el-table-column prop="enabled" label="状态" width="100">
+        <el-table-column prop="enabled" label="状态" width="120">
           <template slot-scope="scope">
             <el-tag :type="scope.row.enabled ? 'success' : 'danger'">
               {{ scope.row.enabled ? '启用' : '禁用' }}
             </el-tag>
           </template>
         </el-table-column>
-        <el-table-column prop="roles" label="角色" width="200">
+        <el-table-column prop="roles" label="角色" width="220">
           <template slot-scope="scope">
             <el-tag v-for="role in scope.row.roles" :key="role.id" size="small" style="margin-right: 5px;">
               {{ role.name }}
             </el-tag>
-          </template>
-        </el-table-column>
-        <el-table-column prop="lastLoginTime" label="最后登录" width="160">
-          <template slot-scope="scope">
-            {{ formatDate(scope.row.lastLoginTime) }}
           </template>
         </el-table-column>
         <el-table-column prop="createdTime" label="创建时间" width="160">
@@ -52,13 +47,14 @@
             {{ formatDate(scope.row.createdTime) }}
           </template>
         </el-table-column>
-        <el-table-column label="操作" width="250" align="center">
+        <el-table-column label="操作" width="320" align="center">
           <template slot-scope="scope">
             <el-button size="mini" type="primary" @click="handleEdit(scope.row)">编辑</el-button>
+            <el-button size="mini" type="danger" @click="handleDelete(scope.row)">删除</el-button>
             <el-button size="mini" type="warning" @click="handleRoles(scope.row)">角色</el-button>
-            <el-button 
-              size="mini" 
-              :type="scope.row.enabled ? 'danger' : 'success'" 
+            <el-button
+              size="mini"
+              :type="scope.row.enabled ? 'danger' : 'success'"
               @click="handleToggleStatus(scope.row)"
             >
               {{ scope.row.enabled ? '禁用' : '启用' }}
@@ -68,12 +64,12 @@
       </el-table>
 
       <!-- 分页 -->
-      <pagination 
-        v-show="total > 0" 
-        :total="total" 
-        :page.sync="listQuery.page" 
-        :limit.sync="listQuery.limit" 
-        @pagination="getList" 
+      <pagination
+        v-show="total > 0"
+        :total="total"
+        :page.sync="listQuery.page"
+        :limit.sync="listQuery.limit"
+        @pagination="getList"
       />
     </el-card>
 
@@ -110,9 +106,9 @@
         </el-form-item>
         <el-form-item label="角色">
           <el-checkbox-group v-model="selectedRoles">
-            <el-checkbox 
-              v-for="role in allRoles" 
-              :key="role.id" 
+            <el-checkbox
+              v-for="role in allRoles"
+              :key="role.id"
               :label="role.id"
               style="display: block; margin-bottom: 10px;"
             >
@@ -131,6 +127,17 @@
 
 <script>
 import Pagination from '@/components/Pagination'
+import {getInfo} from '@/api/user'
+import {
+  fetchUsers,
+  createUser,
+  updateUser,
+  toggleUserStatus,
+  assignUserRoles,
+  deleteUser
+} from '@/api/user'
+import { fetchRoles } from '@/api/role'
+import Logs from "@/views/system/logs.vue";
 
 export default {
   name: 'Users',
@@ -150,7 +157,7 @@ export default {
         callback()
       }
     }
-    
+
     return {
       tableKey: 0,
       list: [],
@@ -196,43 +203,88 @@ export default {
     this.getRoles()
   },
   methods: {
-    getList() {
+    async getList() {
       this.listLoading = true
-      // 模拟数据
-      setTimeout(() => {
-        this.list = [
-          {
-            id: 1,
-            username: 'admin',
-            email: 'admin@hrms.com',
-            enabled: true,
-            roles: [{ id: 1, name: 'ADMIN' }],
-            lastLoginTime: '2025-05-15 10:30:00',
-            createdTime: '2025-01-01 00:00:00'
-          },
-          {
-            id: 2,
-            username: 'hr001',
-            email: 'hr001@hrms.com',
-            enabled: true,
-            roles: [{ id: 2, name: 'HR' }],
-            lastLoginTime: '2025-05-14 16:20:00',
-            createdTime: '2025-01-02 00:00:00'
-          }
-        ]
-        this.total = 2
+      try {
+        const response = await fetchUsers(this.listQuery)
+        console.log(response)
+        this.list = response
+      } catch (error) {
+        console.log(error)
+        this.$message.error('获取用户列表失败')
+      } finally {
         this.listLoading = false
-      }, 1000)
+      }
     },
-    getRoles() {
-      // 模拟角色数据
-      this.allRoles = [
-        { id: 1, name: 'ADMIN', description: '系统管理员' },
-        { id: 2, name: 'HR', description: '人事专员' },
-        { id: 3, name: 'PROJECT_MANAGER', description: '项目经理' },
-        { id: 4, name: 'TESTER', description: '测试人员' },
-        { id: 5, name: 'EMPLOYEE', description: '普通员工' }
-      ]
+    async getRoles() {
+      try {
+        const response = await fetchRoles()
+        this.allRoles = response.data
+      } catch (error) {
+        console.error(error)
+        this.$message.error('获取角色列表失败')
+      }
+    },
+    async createData() {
+      this.$refs['dataForm'].validate(async valid => {
+        if (valid) {
+          try {
+            await createUser(this.temp)
+            this.$message.success('创建成功')
+            this.dialogFormVisible = false
+            this.getList()
+          } catch (error) {
+            console.error(error)
+            this.$message.error('创建用户失败')
+          }
+        }
+      })
+    },
+    async updateData() {
+      this.$refs['dataForm'].validate(async valid => {
+        if (valid) {
+          try {
+            console.log(this.temp)
+            await updateUser(this.temp.id,this.temp)
+            this.$message.success('更新成功')
+            this.dialogFormVisible = false
+            this.getList()
+          } catch (error) {
+            console.error(error)
+            this.$message.error('更新用户失败')
+          }
+        }
+      })
+    },
+    async handleToggleStatus(row) {
+      const action = row.enabled ? 'false' : 'true'
+      try {
+        await this.$confirm(`确认${action}用户 ${row.username}?`, '提示', {
+          confirmButtonText: '确定',
+          cancelButtonText: '取消',
+          type: 'warning'
+        })
+        await toggleUserStatus(row.id,action)
+        row.enabled = !row.enabled
+        this.$message.success(`${action}成功!`)
+        this.getList()
+      } catch (error) {
+        if (error !== 'cancel') {
+          console.error(error)
+          this.$message.error(`${action}用户失败`)
+        }
+      }
+    },
+    async assignRoles() {
+      try {
+        await assignUserRoles(this.currentUser.id, this.selectedRoles)
+        this.$message.success('角色分配成功')
+        this.roleDialogVisible = false
+        this.getList()
+      } catch (error) {
+        console.error(error)
+        this.$message.error('角色分配失败')
+      }
     },
     handleFilter() {
       this.listQuery.page = 0
@@ -271,55 +323,26 @@ export default {
       this.selectedRoles = row.roles.map(role => role.id)
       this.roleDialogVisible = true
     },
-    handleToggleStatus(row) {
-      const action = row.enabled ? '禁用' : '启用'
-      this.$confirm(`确认${action}用户 ${row.username}?`, '提示', {
-        confirmButtonText: '确定',
-        cancelButtonText: '取消',
-        type: 'warning'
-      }).then(() => {
-        row.enabled = !row.enabled
-        this.$message({
-          type: 'success',
-          message: `${action}成功!`
-        })
-      })
-    },
-    createData() {
-      this.$refs['dataForm'].validate(valid => {
-        if (valid) {
-          this.$message({
-            message: '创建成功',
-            type: 'success'
-          })
-          this.dialogFormVisible = false
-          this.getList()
-        }
-      })
-    },
-    updateData() {
-      this.$refs['dataForm'].validate(valid => {
-        if (valid) {
-          this.$message({
-            message: '更新成功',
-            type: 'success'
-          })
-          this.dialogFormVisible = false
-          this.getList()
-        }
-      })
-    },
-    assignRoles() {
-      this.$message({
-        message: '角色分配成功',
-        type: 'success'
-      })
-      this.roleDialogVisible = false
-      this.getList()
-    },
     formatDate(dateString) {
       if (!dateString) return ''
       return new Date(dateString).toLocaleString()
+    },
+    async handleDelete(row) {
+      try {
+        await this.$confirm(`确认删除用户 ${row.username}?`, '提示', {
+          confirmButtonText: '确定',
+          cancelButtonText: '取消',
+          type: 'warning'
+        })
+        await deleteUser(row.id)
+        this.$message.success('删除成功')
+        this.getList()
+      } catch (error) {
+        if (error !== 'cancel') {
+          console.error(error)
+          this.$message.error('删除失败')
+        }
+      }
     }
   }
 }

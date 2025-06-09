@@ -5,7 +5,7 @@
         <span>申请审批管理</span>
         <el-button style="float: right; padding: 3px 0" type="text" @click="handleAdd">提交申请</el-button>
       </div>
-      
+
       <!-- 统计卡片 -->
       <div class="stats-container">
         <el-row :gutter="20">
@@ -52,8 +52,8 @@
           <el-option label="已拒绝" value="REJECTED"></el-option>
         </el-select>
         <el-button class="filter-item" type="primary" icon="el-icon-search" @click="handleFilter">搜索</el-button>
-        <el-button class="filter-item" type="success" @click="handleMyApplications">我的申请</el-button>
-        <el-button class="filter-item" type="warning" @click="handlePendingApprovals">待我审批</el-button>
+<!--        <el-button class="filter-item" type="success" @click="handleMyApplications">我的申请</el-button>-->
+<!--        <el-button class="filter-item" type="warning" @click="handlePendingApprovals">待我审批</el-button>-->
       </div>
 
       <!-- 表格 -->
@@ -65,7 +65,7 @@
             <el-tag>{{ getTypeText(scope.row.applicationType) }}</el-tag>
           </template>
         </el-table-column>
-        <el-table-column prop="applicantName" label="申请人" width="120"></el-table-column>
+        <el-table-column prop="applicant.name" label="申请人" width="120"></el-table-column>
         <el-table-column prop="status" label="状态" width="100">
           <template slot-scope="scope">
             <el-tag :type="getStatusType(scope.row.status)">{{ getStatusText(scope.row.status) }}</el-tag>
@@ -73,7 +73,7 @@
         </el-table-column>
         <el-table-column prop="priority" label="优先级" width="100">
           <template slot-scope="scope">
-            <el-tag :type="getPriorityType(scope.row.priority)" size="small">{{ scope.row.priority }}</el-tag>
+            <el-tag :type="getPriorityType(scope.row.priority)" size="small">{{ getWarningText(scope.row.priority) }}</el-tag>
           </template>
         </el-table-column>
         <el-table-column prop="applyTime" label="申请时间" width="160">
@@ -81,22 +81,27 @@
             {{ formatDate(scope.row.applyTime) }}
           </template>
         </el-table-column>
-        <el-table-column prop="currentApproverName" label="当前审批人" width="120"></el-table-column>
+        <el-table-column prop="currentApprover.name" label="当前审批人" width="120"></el-table-column>
+        <el-table-column prop="applyTime" label="审批时间" width="160">
+          <template slot-scope="scope">
+            {{ formatDate(scope.row.approveTime) }}
+          </template>
+        </el-table-column>
         <el-table-column label="操作" width="200" align="center">
           <template slot-scope="scope">
             <el-button size="mini" type="primary" @click="handleDetail(scope.row)">详情</el-button>
-            <el-button 
-              size="mini" 
-              type="success" 
-              @click="handleApprove(scope.row)" 
+            <el-button
+              size="mini"
+              type="success"
+              @click="handleApprove(scope.row)"
               v-if="canApprove(scope.row)"
             >
               审批
             </el-button>
-            <el-button 
-              size="mini" 
-              type="warning" 
-              @click="handleCancel(scope.row)" 
+            <el-button
+              size="mini"
+              type="warning"
+              @click="handleCancel(scope.row)"
               v-if="canCancel(scope.row)"
             >
               撤回
@@ -106,12 +111,12 @@
       </el-table>
 
       <!-- 分页 -->
-      <pagination 
-        v-show="total > 0" 
-        :total="total" 
-        :page.sync="listQuery.page" 
-        :limit.sync="listQuery.limit" 
-        @pagination="getList" 
+      <pagination
+        v-show="total > 0"
+        :total="total"
+        :page.sync="listQuery.page"
+        :limit.sync="listQuery.size"
+        @pagination="getList"
       />
     </el-card>
 
@@ -141,18 +146,6 @@
             <el-option label="高" value="HIGH"></el-option>
             <el-option label="紧急" value="URGENT"></el-option>
           </el-select>
-        </el-form-item>
-        <el-form-item label="附件">
-          <el-upload
-            class="upload-demo"
-            action="#"
-            :auto-upload="false"
-            :file-list="fileList"
-            :on-change="handleFileChange"
-            :limit="1">
-            <el-button size="small" type="primary">选择文件</el-button>
-            <div slot="tip" class="el-upload__tip">只能上传jpg/png/pdf文件，且不超过2MB</div>
-          </el-upload>
         </el-form-item>
       </el-form>
       <div slot="footer" class="dialog-footer">
@@ -195,7 +188,7 @@
           <el-descriptions-item label="申请ID">{{ currentApplication.id }}</el-descriptions-item>
           <el-descriptions-item label="申请类型">{{ getTypeText(currentApplication.applicationType) }}</el-descriptions-item>
           <el-descriptions-item label="申请标题" :span="2">{{ currentApplication.title }}</el-descriptions-item>
-          <el-descriptions-item label="申请人">{{ currentApplication.applicantName }}</el-descriptions-item>
+          <el-descriptions-item label="申请人">{{ currentApplication.applicant.name }}</el-descriptions-item>
           <el-descriptions-item label="状态">
             <el-tag :type="getStatusType(currentApplication.status)">
               {{ getStatusText(currentApplication.status) }}
@@ -203,11 +196,11 @@
           </el-descriptions-item>
           <el-descriptions-item label="优先级">
             <el-tag :type="getPriorityType(currentApplication.priority)" size="small">
-              {{ currentApplication.priority }}
+              {{ getWarningText(currentApplication.priority) }}
             </el-tag>
           </el-descriptions-item>
           <el-descriptions-item label="申请时间">{{ formatDate(currentApplication.applyTime) }}</el-descriptions-item>
-          <el-descriptions-item label="当前审批人">{{ currentApplication.currentApproverName || '无' }}</el-descriptions-item>
+          <el-descriptions-item label="当前审批人">{{ currentApplication.currentApprover!=null ? currentApplication.currentApprover.name : '无'}}</el-descriptions-item>
           <el-descriptions-item label="审批时间">{{ formatDate(currentApplication.approveTime) || '未审批' }}</el-descriptions-item>
           <el-descriptions-item label="申请内容" :span="2">
             <div style="max-height: 150px; overflow-y: auto;">{{ currentApplication.content }}</div>
@@ -226,6 +219,8 @@
 
 <script>
 import Pagination from '@/components/Pagination'
+import {fetchList} from "@/api/employee";
+import {fetchApplications, fetchApplication, submitApplication, approveApplication, cancelApplication,forwardApplication,getMyApplications,getPendingApprovals,getApplicationStatistics,batchApproveApplications,downloadAttachment} from '@/api/application'
 
 export default {
   name: 'Applications',
@@ -237,8 +232,8 @@ export default {
       total: 0,
       listLoading: true,
       listQuery: {
-        page: 0,
-        limit: 20,
+        page: 1,
+        size: 20,
         type: undefined,
         status: undefined
       },
@@ -282,79 +277,110 @@ export default {
   },
   created() {
     this.getList()
-    this.getStats()
+    this.getStats() // 确保调用统计数据
   },
   methods: {
+    handleFilter() {
+      this.listQuery.page = 1
+      this.getList()
+    },
     getList() {
       this.listLoading = true
-      // 模拟数据
-      setTimeout(() => {
-        this.list = [
-          {
-            id: 1,
-            applicationType: 'LEAVE',
-            title: '年假申请',
-            content: '申请5月20日-5月24日年假，共5天。原因：家庭聚会。',
-            applicantName: '张三',
-            status: 'PENDING',
-            priority: 'NORMAL',
-            applyTime: '2025-05-15 10:30:00',
-            currentApproverName: '李经理',
-            approveTime: null,
-            approveReason: null
-          },
-          {
-            id: 2,
-            applicationType: 'OVERTIME',
-            title: '项目加班申请',
-            content: '因项目紧急需求，申请本周末加班完成测试任务。',
-            applicantName: '李四',
-            status: 'APPROVED',
-            priority: 'HIGH',
-            applyTime: '2025-05-14 14:20:00',
-            currentApproverName: '李经理',
-            approveTime: '2025-05-14 16:30:00',
-            approveReason: '同意加班申请，注意休息'
-          },
-          {
-            id: 3,
-            applicationType: 'EQUIPMENT',
-            title: '笔记本电脑申请',
-            content: '当前电脑配置较低，影响开发效率，申请更换高配置笔记本。',
-            applicantName: '王五',
-            status: 'IN_REVIEW',
-            priority: 'NORMAL',
-            applyTime: '2025-05-13 09:15:00',
-            currentApproverName: '张主管',
-            approveTime: null,
-            approveReason: null
-          }
-        ]
-        this.total = 3
+      fetchApplications(this.listQuery).then(response => {
+        this.list = response.data.content
+        this.total = response.data.totalElements || 0
         this.listLoading = false
-      }, 1000)
+      }).catch(error => {
+        console.error(error)
+        this.listLoading = false
+        this.$message.error('获取申请列表失败')
+      })
     },
     getStats() {
-      // 模拟统计数据
-      this.stats = {
-        total: 15,
-        pending: 3,
-        approved: 10,
-        rejected: 2
-      }
-    },
-    handleFilter() {
-      this.listQuery.page = 0
-      this.getList()
+      getApplicationStatistics().then(response => {
+        console.log(response)
+
+        this.stats = {
+          total: response.data?.total || 0,
+          pending: response.data?.pending || 0,
+          approved: response.data?.approved || 0,
+          rejected: response.data?.rejected || 0
+        }
+      }).catch(error => {
+        console.error('获取统计数据失败:', error)
+        this.stats = {
+          total: 0,
+          pending: 0,
+          approved: 0,
+          rejected: 0
+        }
+        this.$message.error('获取统计数据失败')
+      })
     },
     handleMyApplications() {
-      this.listQuery.applicantId = 'current_user'
-      this.getList()
+      getMyApplications(this.listQuery).then(response => {
+        this.list = response.content || response || []
+        this.total = response.totalElements || response.total || 0
+      }).catch(error => {
+        console.error(error)
+        this.$message.error('获取我的申请失败')
+      })
     },
     handlePendingApprovals() {
-      this.listQuery.status = 'PENDING'
-      this.listQuery.currentApprover = 'current_user'
-      this.getList()
+      getPendingApprovals(this.listQuery).then(response => {
+        this.list = response.content || response || []
+        this.total = response.totalElements || response.total || 0
+      }).catch(error => {
+        console.error(error)
+        this.$message.error('获取待审批申请失败')
+      })
+    },
+    createData() {
+      this.$refs['dataForm'].validate(valid => {
+        if (valid) {
+          submitApplication(this.temp).then(() => {
+            this.$message.success('提交成功')
+            this.dialogFormVisible = false
+            this.getList()
+            this.getStats()
+          }).catch(error => {
+            console.error(error)
+            this.getList()
+            this.getStats()
+            this.$message.error('提交申请失败')
+          })
+        }
+      })
+    },
+    confirmApprove() {
+      if (!this.approveTemp.reason.trim()) {
+        this.$message.error('请输入审批意见')
+        return
+      }
+      approveApplication(this.approveTemp.id,this.approveTemp.approved,this.approveTemp.reason).then(() => {
+        this.$message.success('审批成功')
+        this.approveDialogVisible = false
+        this.getList()
+        this.getStats()
+      }).catch(error => {
+        console.error(error)
+        this.$message.error('审批操作失败')
+      })
+    },
+    handleCancel(row) {
+      this.$confirm('确认撤回该申请?', '提示', {
+        confirmButtonText: '确定',
+        cancelButtonText: '取消',
+        type: 'warning'
+      }).then(() => {
+        cancelApplication(row.id).then(() => {
+          this.$message.success('撤回成功!')
+          this.getList()
+        }).catch(error => {
+          console.error(error)
+          this.$message.error('撤回申请失败')
+        })
+      })
     },
     resetTemp() {
       this.temp = {
@@ -376,6 +402,7 @@ export default {
     },
     handleDetail(row) {
       this.currentApplication = row
+      console.log("this.currentApplication",this.currentApplication)
       this.detailDialogVisible = true
     },
     handleApprove(row) {
@@ -388,31 +415,31 @@ export default {
       }
       this.approveDialogVisible = true
     },
-    handleCancel(row) {
-      this.$confirm('确认撤回该申请?', '提示', {
-        confirmButtonText: '确定',
-        cancelButtonText: '取消',
-        type: 'warning'
-      }).then(() => {
-        this.$message({
-          type: 'success',
-          message: '撤回成功!'
-        })
-        this.getList()
-      })
-    },
-    createData() {
-      this.$refs['dataForm'].validate(valid => {
-        if (valid) {
-          this.$message({
-            message: '提交成功',
-            type: 'success'
-          })
-          this.dialogFormVisible = false
-          this.getList()
-        }
-      })
-    },
+    // handleCancel(row) {
+    //   this.$confirm('确认撤回该申请?', '提示', {
+    //     confirmButtonText: '确定',
+    //     cancelButtonText: '取消',
+    //     type: 'warning'
+    //   }).then(() => {
+    //     this.$message({
+    //       type: 'success',
+    //       message: '撤回成功!'
+    //     })
+    //     this.getList()
+    //   })
+    // },
+    // createData() {
+    //   this.$refs['dataForm'].validate(valid => {
+    //     if (valid) {
+    //       this.$message({
+    //         message: '提交成功',
+    //         type: 'success'
+    //       })
+    //       this.dialogFormVisible = false
+    //       this.getList()
+    //     }
+    //   })
+    // },
     updateData() {
       this.$refs['dataForm'].validate(valid => {
         if (valid) {
@@ -425,18 +452,18 @@ export default {
         }
       })
     },
-    confirmApprove() {
-      if (!this.approveTemp.reason.trim()) {
-        this.$message.error('请输入审批意见')
-        return
-      }
-      this.$message({
-        message: '审批成功',
-        type: 'success'
-      })
-      this.approveDialogVisible = false
-      this.getList()
-    },
+    // confirmApprove() {
+    //   if (!this.approveTemp.reason.trim()) {
+    //     this.$message.error('请输入审批意见')
+    //     return
+    //   }
+    //   this.$message({
+    //     message: '审批成功',
+    //     type: 'success'
+    //   })
+    //   this.approveDialogVisible = false
+    //   this.getList()
+    // },
     handleFileChange(file, fileList) {
       this.fileList = fileList
     },
@@ -475,6 +502,15 @@ export default {
         'EQUIPMENT': '设备申请',
         'REIMBURSEMENT': '报销申请',
         'OTHER': '其他申请'
+      }
+      return typeMap[type]
+    },
+    getWarningText(type) {
+      const typeMap = {
+        'LOW': '低',
+        'NORMAL': '普通',
+        'HIGH': '高',
+        'URGENT': '紧急'
       }
       return typeMap[type]
     },

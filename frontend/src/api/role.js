@@ -87,3 +87,11 @@ export function getUserPermissions(userId) {
     method: 'get'
   })
 }
+
+export function updateRolePermissions(data) {
+  return request({
+    url: '/system/role/assign-permissions',
+    method: 'post',
+    data
+  })
+}

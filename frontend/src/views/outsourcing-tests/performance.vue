@@ -4,17 +4,17 @@
       <div slot="header" class="clearfix">
         <span>测试绩效统计</span>
       </div>
-      
+
       <!-- 筛选区域 -->
       <div class="filter-container">
-        <el-select v-model="listQuery.testerId" placeholder="选择测试人员" clearable style="width: 200px" class="filter-item">
-          <el-option 
-            v-for="tester in testers" 
-            :key="tester.id" 
-            :label="tester.name" 
-            :value="tester.id">
-          </el-option>
-        </el-select>
+<!--        <el-select v-model="listQuery.testerId" placeholder="选择测试人员" clearable style="width: 200px" class="filter-item">-->
+<!--          <el-option-->
+<!--            v-for="tester in testers"-->
+<!--            :key="tester.id"-->
+<!--            :label="tester.name"-->
+<!--            :value="tester.id">-->
+<!--          </el-option>-->
+<!--        </el-select>-->
         <el-date-picker
           v-model="listQuery.month"
           type="month"
@@ -23,7 +23,7 @@
           class="filter-item">
         </el-date-picker>
         <el-button class="filter-item" type="primary" icon="el-icon-search" @click="handleFilter">统计</el-button>
-        <el-button class="filter-item" type="success" icon="el-icon-download" @click="handleExport">导出</el-button>
+<!--        <el-button class="filter-item" type="success" icon="el-icon-download" @click="handleExport">导出</el-button>-->
       </div>
 
       <!-- 统计卡片 -->
@@ -64,8 +64,8 @@
         <el-table-column prop="completedTasks" label="已完成" width="100" align="center"></el-table-column>
         <el-table-column prop="completionRate" label="完成率" width="100" align="center">
           <template slot-scope="scope">
-            <el-progress 
-              :percentage="scope.row.completionRate" 
+            <el-progress
+              :percentage="scope.row.completionRate"
               :color="getProgressColor(scope.row.completionRate)"
               :show-text="false">
             </el-progress>
@@ -91,18 +91,18 @@
         <el-table-column label="操作" width="150" align="center">
           <template slot-scope="scope">
             <el-button size="mini" type="primary" @click="handleDetail(scope.row)">详情</el-button>
-            <el-button size="mini" type="success" @click="handleHistory(scope.row)">历史</el-button>
+<!--            <el-button size="mini" type="success" @click="handleHistory(scope.row)">历史</el-button>-->
           </template>
         </el-table-column>
       </el-table>
 
       <!-- 分页 -->
-      <pagination 
-        v-show="total > 0" 
-        :total="total" 
-        :page.sync="listQuery.page" 
-        :limit.sync="listQuery.limit" 
-        @pagination="getList" 
+      <pagination
+        v-show="total > 0"
+        :total="total"
+        :page.sync="listQuery.page"
+        :limit.sync="listQuery.limit"
+        @pagination="getList"
       />
     </el-card>
 
@@ -120,11 +120,11 @@
           <el-descriptions-item label="总工时">{{ currentPerformance.totalHours }}h</el-descriptions-item>
           <el-descriptions-item label="效率">{{ currentPerformance.efficiency }}%</el-descriptions-item>
         </el-descriptions>
-        
+
         <!-- 任务列表 -->
         <div style="margin-top: 20px;">
           <h4>本月任务详情</h4>
-          <el-table :data="currentPerformance.tasks" border style="width: 100%">
+          <el-table :data="tasks" border style="width: 100%">
             <el-table-column prop="testName" label="任务名称" width="200"></el-table-column>
             <el-table-column prop="status" label="状态" width="100">
               <template slot-scope="scope">
@@ -134,11 +134,6 @@
             <el-table-column prop="score" label="得分" width="80"></el-table-column>
             <el-table-column prop="estimatedHours" label="预计工时" width="100"></el-table-column>
             <el-table-column prop="actualHours" label="实际工时" width="100"></el-table-column>
-            <el-table-column prop="completedTime" label="完成时间" width="160">
-              <template slot-scope="scope">
-                {{ formatDate(scope.row.completedTime) }}
-              </template>
-            </el-table-column>
           </el-table>
         </div>
       </div>
@@ -151,12 +146,27 @@
 
 <script>
 import Pagination from '@/components/Pagination'
+import {
+  fetchTests,
+  fetchTest,
+  createTest,
+  updateTest,
+  deleteTest,
+  assignTest,
+  submitTestResult,
+  reviewTest,
+  getMyTests,
+  getTestStatistics,
+  getTesterPerformance,
+  getTestsById
+} from '@/api/outsourcing-test'
 
 export default {
   name: 'TestPerformance',
   components: { Pagination },
   data() {
     return {
+      tasks:[],
       tableKey: 0,
       list: [],
       total: 0,
@@ -188,78 +198,32 @@ export default {
   methods: {
     getList() {
       this.listLoading = true
-      // 模拟数据
-      setTimeout(() => {
-        this.list = [
-          {
-            employeeId: 1,
-            employeeName: '张测试',
-            department: '测试部',
-            totalTasks: 15,
-            completedTasks: 13,
-            completionRate: 87,
-            averageScore: 88,
-            totalHours: 180,
-            efficiency: 92,
-            grade: 'A',
-            tasks: [
-              {
-                testName: '用户登录功能测试',
-                status: 'COMPLETED',
-                score: 90,
-                estimatedHours: 16,
-                actualHours: 14,
-                completedTime: '2025-05-10 18:00:00'
-              },
-              {
-                testName: '员工管理模块测试',
-                status: 'COMPLETED',
-                score: 85,
-                estimatedHours: 20,
-                actualHours: 18,
-                completedTime: '2025-05-08 17:30:00'
-              }
-            ]
-          },
-          {
-            employeeId: 2,
-            employeeName: '李测试',
-            department: '测试部',
-            totalTasks: 12,
-            completedTasks: 11,
-            completionRate: 92,
-            averageScore: 91,
-            totalHours: 160,
-            efficiency: 95,
-            grade: 'A',
-            tasks: []
-          },
-          {
-            employeeId: 3,
-            employeeName: '王测试',
-            department: '测试部',
-            totalTasks: 10,
-            completedTasks: 8,
-            completionRate: 80,
-            averageScore: 82,
-            totalHours: 140,
-            efficiency: 88,
-            grade: 'B',
-            tasks: []
-          }
-        ]
-        this.total = 3
-        this.listLoading = false
-        
+      getTesterPerformance(this.listQuery).then(response => {
+        this.list = response.data
+        this.total = 6
+
         // 计算总体统计
         this.calculateOverallStats()
-      }, 1000)
+        this.listLoading = false
+      }).catch(error => {
+        console.error(error)
+        this.listLoading = false
+      })
     },
     calculateOverallStats() {
       const totalTests = this.list.reduce((sum, item) => sum + item.totalTasks, 0)
       const completedTests = this.list.reduce((sum, item) => sum + item.completedTasks, 0)
-      const avgScoreSum = this.list.reduce((sum, item) => sum + item.averageScore, 0)
-      
+      const avgScoreSum = this.list.filter(item => item && item.averageScore != null)
+          .reduce((sum, item) => {
+            const score = parseFloat(item.averageScore);
+            return !isNaN(score) ? sum + score : sum;
+          }, 0);
+
+
+
+      console.log(this.list.length)
+      console.log(avgScoreSum)
+      this.list.length > 0 ? Math.round(avgScoreSum / this.list.length) : 0
       this.overallStats = {
         totalTests,
         completedTests,
@@ -280,6 +244,13 @@ export default {
     handleDetail(row) {
       this.currentPerformance = row
       this.detailDialogVisible = true
+      let id = row.employeeId
+      getTestsById({id}).then(response => {
+        console.log(response)
+        this.tasks = response
+      }).catch((error) => {
+        console.log(error)
+      })
     },
     handleHistory(row) {
       this.$message({
@@ -317,7 +288,7 @@ export default {
     },
     getStatusText(status) {
       const statusMap = {
-        'COMPLETED': '已完成',
+        'REVIEWED': '已完成',
         'IN_PROGRESS': '进行中',
         'PENDING': '待分配'
       }

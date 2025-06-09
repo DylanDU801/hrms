@@ -5,7 +5,7 @@
         <span>薪资管理</span>
         <el-button style="float: right; padding: 3px 0" type="text" @click="handleAdd">添加薪资记录</el-button>
       </div>
-      
+
       <el-table :data="salaryList" style="width: 100%" border>
         <el-table-column prop="id" label="ID" width="80"></el-table-column>
         <el-table-column prop="employeeName" label="员工姓名" width="120"></el-table-column>
@@ -28,8 +28,8 @@
     <!-- 薪资对话框 -->
     <el-dialog :title="dialogTitle" :visible.sync="dialogVisible" width="40%">
       <el-form :model="salary" :rules="rules" ref="salaryForm" label-width="100px">
-        <el-form-item label="员工" prop="employeeId">
-          <el-select v-model="salary.employeeId" placeholder="请选择员工">
+        <el-form-item label="员工" prop="employee.id">
+          <el-select v-model="salary.employee.id" placeholder="请选择员工">
             <el-option
               v-for="item in employees"
               :key="item.id"
@@ -62,30 +62,28 @@
 </template>
 
 <script>
+import {fetchList} from "@/api/employee";
+import {fetchSalaries,fetchSalariesByEmployee,createSalary,updateSalary,deleteSalary} from "@/api/salary";
 export default {
   name: 'Salaries',
   data() {
     return {
-      salaryList: [
-        { id: 1, employeeId: 1, employeeName: '张三', payDate: '2025-05-10', amount: 10000, remark: '5月工资' },
-        { id: 2, employeeId: 2, employeeName: '李四', payDate: '2025-05-10', amount: 12000, remark: '5月工资' }
-      ],
-      employees: [
-        { id: 1, name: '张三' },
-        { id: 2, name: '李四' }
-      ],
+      salaryList: [],
+      employees: [],
       dialogVisible: false,
       dialogTitle: '',
       isEdit: false,
       salary: {
         id: null,
-        employeeId: '',
+        employee: {
+          id:''
+        },
         payDate: '',
         amount: 0,
         remark: ''
       },
       rules: {
-        employeeId: [
+        'employee.id': [
           { required: true, message: '请选择员工', trigger: 'change' }
         ],
         payDate: [
@@ -98,18 +96,37 @@ export default {
     }
   },
   created() {
-    // 实际项目中应该通过API获取薪资列表和员工列表
-    // fetchSalaries().then(response => {
-    //   this.salaryList = response.data
-    // })
-    // fetchEmployees().then(response => {
-    //   this.employees = response.data
-    // })
+    this.getSalaries();
+    this.getEmployees();
   },
   methods: {
+    getSalaries() {
+      fetchSalaries().then(response => {
+        this.salaryList = response;
+      }).catch(error => {
+        this.$message.error('获取薪资列表失败');
+        console.error(error);
+      });
+    },
+    getEmployees() {
+      fetchList({page:1,size:2000}).then(response => {
+        this.employees = response.content;
+      }).catch(error => {
+        this.$message.error('获取员工列表失败');
+        console.error(error);
+      });
+    },
     handleAdd() {
       this.dialogTitle = '添加薪资记录'
-      this.salary = { id: null, employeeId: '', payDate: '', amount: 0, remark: '' }
+      this.salary = {
+        id: null,
+        employee: {
+          id:''
+        },
+        payDate: '',
+        amount: 0,
+        remark: ''
+      }
       this.isEdit = false
       this.dialogVisible = true
       this.$nextTick(() => {
@@ -118,15 +135,20 @@ export default {
     },
     handleEdit(row) {
       this.dialogTitle = '编辑薪资记录'
-      this.salary = Object.assign({}, {
+      this.salary = {
         id: row.id,
-        employeeId: row.employeeId,
+        employee: {
+          id: row.employeeId
+        },
         payDate: row.payDate,
         amount: row.amount,
         remark: row.remark
-      })
+      }
       this.isEdit = true
       this.dialogVisible = true
+      this.$nextTick(() => {
+        this.$refs.salaryForm.clearValidate()
+      })
     },
     handleDelete(row) {
       this.$confirm('确认删除该薪资记录?', '提示', {
@@ -134,78 +156,53 @@ export default {
         cancelButtonText: '取消',
         type: 'warning'
       }).then(() => {
-        // 实际项目中应该调用API删除薪资记录
-        // deleteSalary(row.id).then(() => {
-        //   this.getSalaries()
-        //   this.$message({
-        //     type: 'success',
-        //     message: '删除成功!'
-        //   })
-        // })
-        
-        // 模拟删除效果
-        this.salaryList = this.salaryList.filter(s => s.id !== row.id)
-        this.$message({
-          type: 'success',
-          message: '删除成功!'
-        })
+        deleteSalary(row.id).then(() => {
+          this.getSalaries();
+          this.$message({
+            type: 'success',
+            message: '删除成功!'
+          });
+        }).catch(error => {
+          this.$message.error('删除失败');
+          console.error(error);
+        });
       }).catch(() => {
         this.$message({
           type: 'info',
           message: '已取消删除'
-        })          
-      })
+        });
+      });
     },
     submitForm() {
       this.$refs.salaryForm.validate(valid => {
         if (valid) {
-          // 找到员工名称
-          const employee = this.employees.find(e => e.id === this.salary.employeeId)
-          const employeeName = employee ? employee.name : ''
-          
           if (this.isEdit) {
-            // 编辑薪资记录
-            // updateSalary(this.salary.id, this.salary).then(() => {
-            //   this.getSalaries()
-            //   this.dialogVisible = false
-            //   this.$message({
-            //     type: 'success',
-            //     message: '更新成功!'
-            //   })
-            // })
-            
-            // 模拟编辑效果
-            const index = this.salaryList.findIndex(s => s.id === this.salary.id)
-            this.salaryList.splice(index, 1, {
-              ...this.salary,
-              employeeName
-            })
+            updateSalary(this.salary.id, this.salary).then(() => {
+              this.getSalaries();
+              this.dialogVisible = false;
+              this.$message({
+                type: 'success',
+                message: '更新成功!'
+              });
+            }).catch(error => {
+              this.$message.error('更新失败');
+              console.error(error);
+            });
           } else {
-            // 添加薪资记录
-            // createSalary(this.salary).then(response => {
-            //   this.getSalaries()
-            //   this.dialogVisible = false
-            //   this.$message({
-            //     type: 'success',
-            //     message: '添加成功!'
-            //   })
-            // })
-            
-            // 模拟添加效果
-            const newSalary = Object.assign({}, this.salary)
-            newSalary.id = this.salaryList.length + 1
-            newSalary.employeeName = employeeName
-            this.salaryList.push(newSalary)
+            createSalary(this.salary).then(() => {
+              this.getSalaries();
+              this.dialogVisible = false;
+              this.$message({
+                type: 'success',
+                message: '添加成功!'
+              });
+            }).catch(error => {
+              this.$message.error('添加失败');
+              console.error(error);
+            });
           }
-          this.dialogVisible = false
-          this.$message({
-            type: 'success',
-            message: this.isEdit ? '更新成功!' : '添加成功!'
-          })
-        } else {
-          return false
         }
-      })
+      });
     }
   }
 }

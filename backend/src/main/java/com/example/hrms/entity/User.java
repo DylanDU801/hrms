@@ -22,53 +22,53 @@ public class User {
 
     @Column(nullable = false, unique = true, length = 50)
     private String username;
-    
+
     @Column(nullable = false, length = 255)
     private String password;
-    
+
     @Column(length = 100)
     private String email;
-    
+
     @Column(nullable = false)
     private Boolean enabled = true;
-    
+
     // 账户是否未过期
     @Column(nullable = false)
     private Boolean accountNonExpired = true;
-    
+
     // 账户是否未锁定
-    @Column(nullable = false) 
+    @Column(nullable = false)
     private Boolean accountNonLocked = true;
-    
+
     // 密码是否未过期
     @Column(nullable = false)
     private Boolean credentialsNonExpired = true;
-    
+
     // 最后登录时间
     private LocalDateTime lastLoginTime;
-    
+
     // 最后登录IP
     private String lastLoginIp;
-    
+
     @Column(updatable = false)
     private LocalDateTime createdTime = LocalDateTime.now();
-    
+
     private LocalDateTime updatedTime = LocalDateTime.now();
-    
+
     // 用户拥有的角色
-    @ManyToMany(fetch = FetchType.LAZY, cascade = CascadeType.MERGE)
+    @ManyToMany(fetch = FetchType.LAZY)
     @JoinTable(
         name = "user_roles",
         joinColumns = @JoinColumn(name = "user_id"),
         inverseJoinColumns = @JoinColumn(name = "role_id")
     )
     private Set<Role> roles;
-    
+
     @PreUpdate
     private void preUpdate() {
         this.updatedTime = LocalDateTime.now();
     }
-    
+
     // 重写equals和hashCode，只使用id字段
     @Override
     public boolean equals(Object o) {
@@ -77,12 +77,12 @@ public class User {
         User user = (User) o;
         return Objects.equals(id, user.id);
     }
-    
+
     @Override
     public int hashCode() {
         return Objects.hash(id);
     }
-    
+
     @Override
     public String toString() {
         return "User{" +

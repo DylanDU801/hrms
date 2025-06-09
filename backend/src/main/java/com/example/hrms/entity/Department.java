@@ -22,14 +22,14 @@ public class Department {
     private String name; // 部门名称
 
     // 一个部门有多个员工
-    @OneToMany(mappedBy = "department", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
-    private List<Employee> employees;
+//    @OneToMany(mappedBy = "department", fetch = FetchType.LAZY)
+//    private List<Employee> employees;
 
     // 添加构造方法
     public Department(String name) {
         this.name = name;
     }
-    
+
     // 重写equals和hashCode，只使用id字段
     @Override
     public boolean equals(Object o) {
@@ -38,12 +38,12 @@ public class Department {
         Department that = (Department) o;
         return Objects.equals(id, that.id);
     }
-    
+
     @Override
     public int hashCode() {
         return Objects.hash(id);
     }
-    
+
     @Override
     public String toString() {
         return "Department{" +

@@ -5,7 +5,7 @@
         <span>角色管理</span>
         <el-button style="float: right; padding: 3px 0" type="text" @click="handleAdd">添加角色</el-button>
       </div>
-      
+
       <el-table :data="list" v-loading="listLoading" border style="width: 100%">
         <el-table-column prop="id" label="ID" width="80"></el-table-column>
         <el-table-column prop="name" label="角色名称" width="150"></el-table-column>
@@ -20,7 +20,7 @@
         <el-table-column prop="permissions" label="权限数量" width="120">
           <template slot-scope="scope">
             <el-badge :value="scope.row.permissions ? scope.row.permissions.length : 0" class="item">
-              <el-button size="mini">权限</el-button>
+<!--              <el-button size="mini">权限</el-button>-->
             </el-badge>
           </template>
         </el-table-column>
@@ -37,8 +37,8 @@
           </template>
         </el-table-column>
       </el-table>
-    </el-card>
 
+    </el-card>
     <!-- 角色对话框 -->
     <el-dialog :title="textMap[dialogStatus]" :visible.sync="dialogFormVisible" width="500px">
       <el-form ref="dataForm" :rules="rules" :model="temp" label-position="left" label-width="100px">
@@ -68,9 +68,9 @@
           <div v-for="(group, resource) in groupedPermissions" :key="resource" style="margin-bottom: 20px;">
             <h4>{{ resource }}</h4>
             <el-checkbox-group v-model="selectedPermissions">
-              <el-checkbox 
-                v-for="permission in group" 
-                :key="permission.id" 
+              <el-checkbox
+                v-for="permission in group"
+                :key="permission.id"
                 :label="permission.id"
                 style="margin-right: 20px; margin-bottom: 10px;"
               >
@@ -89,6 +89,10 @@
 </template>
 
 <script>
+import {fetchRoles,updateRole,createRole,deleteRole} from "@/api/role";
+import {createEmployee, updateEmployee} from "@/api/employee";
+import {fetchPermissions,updateRolePermissions} from "@/api/permission";
+
 export default {
   name: 'Roles',
   data() {
@@ -113,9 +117,21 @@ export default {
         create: '创建角色'
       },
       rules: {
-        name: [{ required: true, message: '角色名称是必填项', trigger: 'blur' }],
-        description: [{ required: true, message: '描述是必填项', trigger: 'blur' }]
-      }
+        name: [
+          { required: true, message: '角色名称不能为空', trigger: 'blur' },
+          { min: 2, max: 20, message: '长度在2到20个字符', trigger: 'blur' }
+        ],
+        description: [
+          { required: true, message: '角色描述不能为空', trigger: 'blur' },
+          { max: 100, message: '不能超过100个字符', trigger: 'blur' }
+        ]
+      },
+      listQuery: {
+        page: 1,
+        size: 10,
+        name: undefined
+      },
+      total: 0,
     }
   },
   created() {
@@ -123,52 +139,95 @@ export default {
     this.getPermissions()
   },
   methods: {
-    getList() {
-      this.listLoading = true
-      // 模拟数据
-      setTimeout(() => {
-        this.list = [
-          {
-            id: 1,
-            name: 'ADMIN',
-            description: '系统管理员',
-            enabled: true,
-            permissions: Array(15).fill(0).map((_, i) => ({ id: i + 1 })),
-            createdTime: '2025-01-01 00:00:00'
-          },
-          {
-            id: 2,
-            name: 'HR',
-            description: '人事专员',
-            enabled: true,
-            permissions: Array(8).fill(0).map((_, i) => ({ id: i + 1 })),
-            createdTime: '2025-01-01 00:00:00'
-          }
-        ]
-        this.listLoading = false
-      }, 1000)
+    async getList() {
+      this.listLoading = false
+      try {
+        const response = await fetchRoles()
+        this.list = response.data
+      } catch (error) {
+        console.error(error)
+        this.$message.error('获取角色列表失败')
+      }
     },
     getPermissions() {
       // 模拟权限数据并按资源分组
-      const permissions = [
-        { id: 1, name: 'USER_READ', resource: '用户', action: '查看', description: '查看用户信息' },
-        { id: 2, name: 'USER_WRITE', resource: '用户', action: '编辑', description: '编辑用户信息' },
-        { id: 3, name: 'EMPLOYEE_READ', resource: '员工', action: '查看', description: '查看员工信息' },
-        { id: 4, name: 'EMPLOYEE_WRITE', resource: '员工', action: '编辑', description: '编辑员工信息' },
-        { id: 5, name: 'TEST_READ', resource: '测试', action: '查看', description: '查看测试任务' },
-        { id: 6, name: 'TEST_WRITE', resource: '测试', action: '编辑', description: '创建编辑测试任务' }
-      ]
-      
-      this.allPermissions = permissions
-      this.groupedPermissions = permissions.reduce((groups, permission) => {
-        const { resource } = permission
-        if (!groups[resource]) {
-          groups[resource] = []
-        }
-        groups[resource].push(permission)
-        return groups
-      }, {})
+      // const permissions = [
+      //   { id: 1, name: 'USER_READ', resource: '用户', action: '查看', description: '查看用户信息' },
+      //   { id: 2, name: 'USER_WRITE', resource: '用户', action: '编辑', description: '编辑用户信息' },
+      //   { id: 3, name: 'EMPLOYEE_READ', resource: '员工', action: '查看', description: '查看员工信息' },
+      //   { id: 4, name: 'EMPLOYEE_WRITE', resource: '员工', action: '编辑', description: '编辑员工信息' },
+      //   { id: 5, name: 'TEST_READ', resource: '测试', action: '查看', description: '查看测试任务' },
+      //   { id: 6, name: 'TEST_WRITE', resource: '测试', action: '编辑', description: '创建编辑测试任务' }
+      // ]
+
+      fetchPermissions().then((re) => {
+        console.log(re.data)
+        this.allPermissions = re.data
+        this.groupedPermissions = this.allPermissions.reduce((groups, permission) => {
+          const { resource } = permission
+          if (!groups[resource]) {
+            groups[resource] = []
+          }
+          groups[resource].push(permission)
+          return groups
+        }, {})
+
+      }).catch((e) => {
+        console.error(e)
+      })
     },
+    createData() {
+      this.$refs['dataForm'].validate((valid) => {
+        if (valid) {
+          createRole(this.temp).then(() => {
+            this.list.unshift(this.temp)
+            this.dialogFormVisible = false
+            this.$notify({
+              title: '成功',
+              message: '创建成功',
+              type: 'success',
+              duration: 2000
+            })
+            this.getList()
+          }).catch((e) => {
+            console.log(e)
+            this.$notify({
+              title: '错误',
+              message: '创建失败',
+              type: 'error',
+              duration: 2000
+            })
+          })
+        }
+      })
+    },
+    updateData() {
+      this.$refs['dataForm'].validate((valid) => {
+        if (valid) {
+          const tempData = Object.assign({}, this.temp)
+          updateRole(tempData.id, tempData).then(() => {
+            const index = this.list.findIndex(v => v.id === this.temp.id)
+            this.list.splice(index, 1, this.temp)
+            this.dialogFormVisible = false
+            this.getList()
+            this.$notify({
+              title: '成功',
+              message: '更新成功',
+              type: 'success',
+              duration: 2000
+            })
+          }).catch(() => {
+            this.$notify({
+              title: '错误',
+              message: '更新失败',
+              type: 'error',
+              duration: 2000
+            })
+          })
+        }
+      })
+    },
+
     resetTemp() {
       this.temp = {
         id: undefined,
@@ -181,9 +240,9 @@ export default {
       this.resetTemp()
       this.dialogStatus = 'create'
       this.dialogFormVisible = true
-      this.$nextTick(() => {
-        this.$refs['dataForm'].clearValidate()
-      })
+      // this.$nextTick(() => {
+      //   this.$refs['dataForm'].clearValidate()
+      // })
     },
     handleEdit(row) {
       this.temp = Object.assign({}, row)
@@ -194,54 +253,52 @@ export default {
       })
     },
     handlePermissions(row) {
-      this.currentRole = row
-      this.selectedPermissions = row.permissions ? row.permissions.map(p => p.id) : []
-      this.permissionDialogVisible = true
+        this.currentRole = row
+        this.selectedPermissions = row.permissions ? row.permissions.map(p => p.id) : []
+        this.permissionLoading = true
+        this.permissionDialogVisible = true
+
+        // 如果权限数据未加载则重新获取
+        if (this.allPermissions.length === 0) {
+            this.getPermissions().finally(() => {
+                this.permissionLoading = false
+            })
+        } else {
+            this.permissionLoading = false
+        }
     },
-    handleDelete(row) {
+    async handleDelete(row) {
       this.$confirm(`确认删除角色 ${row.name}?`, '提示', {
         confirmButtonText: '确定',
         cancelButtonText: '取消',
         type: 'warning'
       }).then(() => {
-        this.$message({
-          type: 'success',
-          message: '删除成功!'
+        deleteRole(row.id).then(() => {
+          this.getList()
+          this.$message.success('删除成功')
+        }).catch((e) => {
+          console.error(e)
+          this.getList()
+          this.$message.error('删除失败')
         })
-        this.getList()
       })
     },
-    createData() {
-      this.$refs['dataForm'].validate(valid => {
-        if (valid) {
-          this.$message({
-            message: '创建成功',
-            type: 'success'
-          })
-          this.dialogFormVisible = false
+    async assignPermissions() {
+        try {
+            await updateRolePermissions(
+                this.currentRole.id,
+                this.selectedPermissions
+            )
+          this.currentRole.permissions = this.allPermissions.filter(p =>
+              this.selectedPermissions.includes(p.id)
+          )
+          this.$message.success('权限分配成功')
+          this.permissionDialogVisible = false
           this.getList()
-        }
-      })
-    },
-    updateData() {
-      this.$refs['dataForm'].validate(valid => {
-        if (valid) {
-          this.$message({
-            message: '更新成功',
-            type: 'success'
-          })
-          this.dialogFormVisible = false
-          this.getList()
-        }
-      })
-    },
-    assignPermissions() {
-      this.$message({
-        message: '权限分配成功',
-        type: 'success'
-      })
-      this.permissionDialogVisible = false
-      this.getList()
+        } catch (error) {
+        console.error('权限分配失败:', error)
+        this.$message.error('权限分配失败')
+      }
     },
     formatDate(dateString) {
       if (!dateString) return ''
@@ -255,4 +312,5 @@ export default {
 .roles-container {
   padding: 20px;
 }
+
 </style>

@@ -14,7 +14,7 @@
           </el-dropdown-menu>
         </el-dropdown>
       </div>
-      
+
       <!-- 统计卡片 -->
       <div class="stats-container">
         <el-row :gutter="20">
@@ -24,12 +24,12 @@
               <div class="stat-label">总日志数</div>
             </div>
           </el-col>
-          <el-col :span="6">
-            <div class="stat-card today">
-              <div class="stat-number">{{ stats.today }}</div>
-              <div class="stat-label">今日操作</div>
-            </div>
-          </el-col>
+<!--          <el-col :span="6">-->
+<!--            <div class="stat-card today">-->
+<!--              <div class="stat-number">{{ stats.today }}</div>-->
+<!--              <div class="stat-label">今日操作</div>-->
+<!--            </div>-->
+<!--          </el-col>-->
           <el-col :span="6">
             <div class="stat-card success">
               <div class="stat-number">{{ stats.success }}</div>
@@ -45,45 +45,10 @@
         </el-row>
       </div>
 
-      <!-- 筛选区域 -->
-      <div class="filter-container">
-        <el-select v-model="listQuery.userId" placeholder="用户" clearable style="width: 150px" class="filter-item">
-          <el-option
-            v-for="user in users"
-            :key="user.id"
-            :label="user.name"
-            :value="user.id">
-          </el-option>
-        </el-select>
-        <el-select v-model="listQuery.operation" placeholder="操作类型" clearable style="width: 150px" class="filter-item">
-          <el-option label="登录" value="LOGIN"></el-option>
-          <el-option label="登出" value="LOGOUT"></el-option>
-          <el-option label="创建" value="CREATE"></el-option>
-          <el-option label="更新" value="UPDATE"></el-option>
-          <el-option label="删除" value="DELETE"></el-option>
-          <el-option label="查询" value="SELECT"></el-option>
-        </el-select>
-        <el-select v-model="listQuery.status" placeholder="状态" clearable style="width: 120px" class="filter-item">
-          <el-option label="成功" value="SUCCESS"></el-option>
-          <el-option label="失败" value="FAILED"></el-option>
-          <el-option label="错误" value="ERROR"></el-option>
-        </el-select>
-        <el-date-picker
-          v-model="dateRange"
-          type="datetimerange"
-          range-separator="至"
-          start-placeholder="开始日期"
-          end-placeholder="结束日期"
-          class="filter-item">
-        </el-date-picker>
-        <el-button class="filter-item" type="primary" icon="el-icon-search" @click="handleFilter">搜索</el-button>
-        <el-button class="filter-item" type="warning" @click="handleReset">重置</el-button>
-      </div>
-
       <!-- 表格 -->
       <el-table :data="list" v-loading="listLoading" border style="width: 100%" @row-click="handleRowClick">
         <el-table-column prop="id" label="ID" width="80"></el-table-column>
-        <el-table-column prop="username" label="用户" width="120"></el-table-column>
+        <el-table-column prop="user.username" label="用户" width="120"></el-table-column>
         <el-table-column prop="operation" label="操作" width="120">
           <template slot-scope="scope">
             <el-tag :type="getOperationType(scope.row.operation)">{{ scope.row.operation }}</el-tag>
@@ -120,12 +85,12 @@
       </el-table>
 
       <!-- 分页 -->
-      <pagination 
-        v-show="total > 0" 
-        :total="total" 
-        :page.sync="listQuery.page" 
-        :limit.sync="listQuery.limit" 
-        @pagination="getList" 
+      <pagination
+        v-show="total > 0"
+        :total="total"
+        :page.sync="listQuery.page"
+        :limit.sync="listQuery.limit"
+        @pagination="getList"
       />
     </el-card>
 
@@ -185,6 +150,7 @@
 
 <script>
 import Pagination from '@/components/Pagination'
+import { fetchLogs, fetchLogStats, exportLogs, cleanupLogs} from '@/api/log'
 
 export default {
   name: 'OperationLogs',
@@ -197,7 +163,7 @@ export default {
       listLoading: true,
       dateRange: [],
       listQuery: {
-        page: 0,
+        page: 1,
         limit: 20,
         userId: undefined,
         operation: undefined,
@@ -237,100 +203,72 @@ export default {
   },
   created() {
     this.getList()
-    this.getStats()
+    // this.getStats()
   },
   methods: {
-    getList() {
+    async getList() {
       this.listLoading = true
-      // 模拟数据
-      setTimeout(() => {
-        this.list = [
-          {
-            id: 1,
-            username: 'admin',
-            operation: 'LOGIN',
-            method: 'POST',
-            params: '{"username":"admin","password":"***"}',
-            result: '{"code":20000,"message":"登录成功"}',
-            ipAddress: '192.168.1.100',
-            userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
-            status: 'SUCCESS',
-            executionTime: 156,
-            createdTime: '2025-05-16 09:30:15'
-          },
-          {
-            id: 2,
-            username: 'hr001',
-            operation: 'CREATE',
-            method: 'POST',
-            params: '{"name":"新员工","email":"test@example.com"}',
-            result: '{"code":20000,"data":{"id":123}}',
-            ipAddress: '192.168.1.101',
-            userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
-            status: 'SUCCESS',
-            executionTime: 234,
-            createdTime: '2025-05-16 10:15:32'
-          },
-          {
-            id: 3,
-            username: 'pm001',
-            operation: 'DELETE',
-            method: 'DELETE',
-            params: '{"id":456}',
-            result: '{"code":50000,"message":"权限不足"}',
-            ipAddress: '192.168.1.102',
-            userAgent: 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36',
-            status: 'FAILED',
-            executionTime: 89,
-            createdTime: '2025-05-16 11:20:45'
-          },
-          {
-            id: 4,
-            username: 'admin',
-            operation: 'SELECT',
-            method: 'GET',
-            params: '{"page":0,"limit":20}',
-            result: '{"code":20000,"data":[...]}',
-            ipAddress: '192.168.1.100',
-            userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
-            status: 'SUCCESS',
-            executionTime: 1245,
-            createdTime: '2025-05-16 14:35:20'
-          },
-          {
-            id: 5,
-            username: 'hr001',
-            operation: 'UPDATE',
-            method: 'PUT',
-            params: '{"id":789,"name":"更新员工"}',
-            result: '{"code":20000,"message":"更新成功"}',
-            ipAddress: '192.168.1.101',
-            userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
-            status: 'SUCCESS',
-            executionTime: 312,
-            createdTime: '2025-05-16 15:42:18'
-          }
-        ]
-        this.total = 5
+      try {
+        const response = await fetchLogs(this.listQuery)
+        this.list = response.data.content
+        this.total = response.data.totalElements
+        this.stats.total = response.data.totalElements
+      } catch (error) {
+        console.error(error)
+        this.$message.error('获取日志列表失败')
+      } finally {
         this.listLoading = false
-      }, 1000)
-    },
-    getStats() {
-      // 模拟统计数据
-      this.stats = {
-        total: 15847,
-        today: 156,
-        success: 14523,
-        failed: 1324
       }
     },
+    async getStats() {
+      try {
+        const response = await fetchLogStats()
+        this.stats = response.data
+      } catch (error) {
+        console.error(error)
+      }
+    },
+    // async handleExport() {
+    //   try {
+    //     const response = await exportLogs(this.listQuery)
+    //     const url = window.URL.createObjectURL(new Blob([response]))
+    //     const link = document.createElement('a')
+    //     link.href = url
+    //     link.setAttribute('download', `操作日志_${new Date().toISOString()}.xlsx`)
+    //     document.body.appendChild(link)
+    //     link.click()
+    //     this.$message.success('导出成功')
+    //   } catch (error) {
+    //     console.error(error)
+    //     this.$message.error('导出失败')
+    //   }
+    // },
+    // async confirmCleanup() {
+    //   try {
+    //     await this.$confirm(`确认删除 ${this.cleanupTemp.retentionDays} 天前的所有日志?`, '警告', {
+    //       confirmButtonText: '确定',
+    //       cancelButtonText: '取消',
+    //       type: 'warning'
+    //     })
+    //     await cleanupLogs(this.cleanupTemp.retentionDays)
+    //     this.$message.success('清理完成')
+    //     this.cleanupDialogVisible = false
+    //     this.getList()
+    //     this.getStats()
+    //   } catch (error) {
+    //     if (error !== 'cancel') {
+    //       console.error(error)
+    //       this.$message.error('清理失败')
+    //     }
+    //   }
+    // },
     handleFilter() {
-      this.listQuery.page = 0
+      this.listQuery.page = 1
       this.getList()
     },
     handleReset() {
       this.listQuery = {
-        page: 0,
+        page: 1,
         limit: 20,
         userId: undefined,
         operation: undefined,
@@ -369,12 +307,21 @@ export default {
         cancelButtonText: '取消',
         type: 'warning'
       }).then(() => {
-        this.$message({
-          type: 'success',
-          message: '清理完成!'
-        })
-        this.cleanupDialogVisible = false
-        this.getList()
+        try {
+          cleanupLogs(this.cleanupTemp.retentionDays)
+          this.getList()
+        } catch (error) {
+          this.getList()
+          console.error(error)
+          this.$message.error('获取日志列表失败')
+        } finally {
+          this.$message({
+            type: 'success',
+            message: '清理完成!'
+          })
+          this.cleanupDialogVisible = false
+          this.getList()
+        }
       })
     },
     getOperationType(operation) {

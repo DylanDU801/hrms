@@ -63,9 +63,10 @@ export const constantRoutes = [
   {
     path: '/departments',
     component: Layout,
+    meta: { title: '部门管理', icon: 'el-icon-office-building' },
     children: [
       {
-        path: 'index',
+        path: '',
         name: 'Department',
         component: () => import('@/views/departments/index'),
         meta: { title: '部门管理', icon: 'el-icon-office-building' }
@@ -146,6 +147,7 @@ export const constantRoutes = [
   {
     path: '/salaries',
     component: Layout,
+    meta: { title: '薪资管理', icon: 'el-icon-money' },
     children: [
       {
         path: 'index',

@@ -5,7 +5,7 @@
         <span>权限管理</span>
         <el-button style="float: right; padding: 3px 0" type="text" @click="handleAdd">添加权限</el-button>
       </div>
-      
+
       <!-- 筛选区域 -->
       <div class="filter-container">
         <el-select v-model="listQuery.resource" placeholder="资源类型" clearable style="width: 150px" class="filter-item">
@@ -30,8 +30,8 @@
       <!-- 分组视图 -->
       <div v-if="showGroupView" class="group-view">
         <el-collapse v-model="activeGroups" accordion>
-          <el-collapse-item 
-            v-for="(permissions, resource) in groupedPermissions" 
+          <el-collapse-item
+            v-for="(permissions, resource) in groupedPermissions"
             :key="resource"
             :title="`${resource} (${permissions.length}个权限)`"
             :name="resource"
@@ -83,13 +83,13 @@
         </el-table>
 
         <!-- 分页 -->
-        <pagination 
-          v-show="total > 0" 
-          :total="total" 
-          :page.sync="listQuery.page" 
-          :limit.sync="listQuery.limit" 
-          @pagination="getList" 
-        />
+<!--        <pagination-->
+<!--          v-show="total > 0"-->
+<!--          :total="total"-->
+<!--          :page.sync="listQuery.page"-->
+<!--          :limit.sync="listQuery.limit"-->
+<!--          @pagination="getList"-->
+<!--        />-->
       </div>
     </el-card>
 
@@ -135,7 +135,7 @@
 
 <script>
 import Pagination from '@/components/Pagination'
-
+import {fetchPermissions,updateRolePermissions,updatePermission,createPermission,deletePermission} from "@/api/permission";
 export default {
   name: 'Permissions',
   components: { Pagination },
@@ -191,95 +191,20 @@ export default {
     this.getList()
   },
   methods: {
-    getList() {
+    async getList() {
       this.listLoading = true
-      // 模拟数据
-      setTimeout(() => {
-        this.list = [
-          {
-            id: 1,
-            name: 'USER_READ',
-            resource: '用户',
-            action: '查看',
-            description: '查看用户信息',
-            createdTime: '2025-01-01 00:00:00'
-          },
-          {
-            id: 2,
-            name: 'USER_WRITE',
-            resource: '用户',
-            action: '编辑',
-            description: '编辑用户信息',
-            createdTime: '2025-01-01 00:00:00'
-          },
-          {
-            id: 3,
-            name: 'USER_DELETE',
-            resource: '用户',
-            action: '删除',
-            description: '删除用户',
-            createdTime: '2025-01-01 00:00:00'
-          },
-          {
-            id: 4,
-            name: 'EMPLOYEE_READ',
-            resource: '员工',
-            action: '查看',
-            description: '查看员工信息',
-            createdTime: '2025-01-01 00:00:00'
-          },
-          {
-            id: 5,
-            name: 'EMPLOYEE_WRITE',
-            resource: '员工',
-            action: '编辑',
-            description: '编辑员工信息',
-            createdTime: '2025-01-01 00:00:00'
-          },
-          {
-            id: 6,
-            name: 'TEST_READ',
-            resource: '测试',
-            action: '查看',
-            description: '查看测试任务',
-            createdTime: '2025-01-01 00:00:00'
-          },
-          {
-            id: 7,
-            name: 'TEST_WRITE',
-            resource: '测试',
-            action: '编辑',
-            description: '创建编辑测试任务',
-            createdTime: '2025-01-01 00:00:00'
-          },
-          {
-            id: 8,
-            name: 'APPLICATION_READ',
-            resource: '申请',
-            action: '查看',
-            description: '查看申请',
-            createdTime: '2025-01-01 00:00:00'
-          },
-          {
-            id: 9,
-            name: 'APPLICATION_APPROVE',
-            resource: '申请',
-            action: '审批',
-            description: '审批申请',
-            createdTime: '2025-01-01 00:00:00'
-          },
-          {
-            id: 10,
-            name: 'SALARY_READ',
-            resource: '薪资',
-            action: '查看',
-            description: '查看薪资',
-            createdTime: '2025-01-01 00:00:00'
-          }
-        ]
-        this.total = 10
+      try {
+        const response = await fetchPermissions({
+            resource: this.listQuery.resource,
+            keyword: this.listQuery.keyword
+        })
+        this.list = response.data
+      } catch (error) {
+        console.error(error)
+        this.$message.error('获取权限列表失败')
+      } finally {
         this.listLoading = false
-      }, 1000)
+      }
     },
     handleFilter() {
       this.listQuery.page = 0
@@ -313,48 +238,50 @@ export default {
         this.$refs['dataForm'].clearValidate()
       })
     },
-    handleDelete(row) {
-      this.$confirm(`确认删除权限 ${row.name}?`, '提示', {
-        confirmButtonText: '确定',
-        cancelButtonText: '取消',
-        type: 'warning'
-      }).then(() => {
-        this.$message({
-          type: 'success',
-          message: '删除成功!'
+    async handleDelete(row) {
+      try {
+        await this.$confirm(`确认删除权限 ${row.name}?`, '提示', {
+            confirmButtonText: '确定',
+            cancelButtonText: '取消',
+            type: 'warning'
         })
+        await deletePermission(row.id)
+        this.$message.success('删除成功')
         this.getList()
-      })
+      } catch (error) {
+        if (error !== 'cancel') {
+            console.error(error)
+            this.$message.error('删除失败')
+        }
+      }
     },
-    createData() {
-      this.$refs['dataForm'].validate(valid => {
-        if (valid) {
-          this.$message({
-            message: '创建成功',
-            type: 'success'
-          })
+    async createData() {
+      try {
+          await this.$refs['dataForm'].validate()
+          await createPermission(this.temp)
+          this.$message.success('创建成功')
           this.dialogFormVisible = false
           this.getList()
-        }
-      })
+      } catch (error) {
+          console.error(error)
+      }
     },
-    updateData() {
-      this.$refs['dataForm'].validate(valid => {
-        if (valid) {
-          this.$message({
-            message: '更新成功',
-            type: 'success'
-          })
+    async updateData() {
+      try {
+          await this.$refs['dataForm'].validate()
+          await updatePermission(this.temp.id, this.temp)
+          this.$message.success('更新成功')
           this.dialogFormVisible = false
           this.getList()
-        }
-      })
+      } catch (error) {
+          console.error(error)
+      }
     },
     formatDate(dateString) {
       if (!dateString) return ''
       return new Date(dateString).toLocaleString()
     }
-  }
+},
 }
 </script>
 

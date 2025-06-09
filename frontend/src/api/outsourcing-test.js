@@ -62,10 +62,19 @@ export function reviewTest(id, score, comment) {
   })
 }
 
-export function getMyTests() {
+export function getMyTests(status) {
   return request({
     url: '/api/outsourcing-tests/my-tests',
-    method: 'get'
+    method: 'get',
+    params:status
+  })
+}
+
+export function getTestsById(id) {
+  return request({
+    url: '/api/outsourcing-tests/getTestsById',
+    method: 'get',
+    params:id
   })
 }
 
@@ -77,10 +86,17 @@ export function getTestStatistics(startDate, endDate) {
   })
 }
 
-export function getTesterPerformance(testerId, month) {
+export function getTesterPerformance(params) {
   return request({
     url: '/api/outsourcing-tests/performance',
     method: 'get',
-    params: { testerId, month }
+    params
   })
 }
+// export function getTesterPerformance(testerId, month) {
+//   return request({
+//     url: '/api/outsourcing-tests/performance',
+//     method: 'get',
+//     params: { testerId, month }
+//   })
+// }

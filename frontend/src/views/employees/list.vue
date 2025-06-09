@@ -3,15 +3,15 @@
     <el-card class="box-card">
       <div slot="header" class="clearfix">
         <span>员工列表</span>
-        <el-button 
-          style="float: right; padding: 3px 0" 
-          type="text" 
-          @click="handleAdd"
-        >
-          添加员工
-        </el-button>
+<!--        <el-button-->
+<!--          style="float: right; padding: 3px 0"-->
+<!--          type="text"-->
+<!--          @click="handleAdd"-->
+<!--        >-->
+<!--          添加员工-->
+<!--        </el-button>-->
       </div>
-      
+
       <!-- 搜索区域 -->
       <div class="filter-container">
         <el-input
@@ -21,19 +21,19 @@
           class="filter-item"
           @keyup.enter.native="handleFilter"
         />
-        <el-button 
-          class="filter-item" 
-          type="primary" 
-          icon="el-icon-search" 
+        <el-button
+          class="filter-item"
+          type="primary"
+          icon="el-icon-search"
           @click="handleFilter"
         >
           搜索
         </el-button>
-        <el-button 
-          class="filter-item" 
-          style="margin-left: 10px;" 
-          type="primary" 
-          icon="el-icon-edit" 
+        <el-button
+          class="filter-item"
+          style="margin-left: 10px;"
+          type="primary"
+          icon="el-icon-edit"
           @click="handleCreate"
         >
           添加
@@ -50,16 +50,16 @@
         highlight-current-row
         style="width: 100%;"
       >
-        <el-table-column 
-          label="ID" 
-          prop="id" 
-          sortable="custom" 
-          align="center" 
+        <el-table-column
+          label="ID"
+          prop="id"
+          sortable="custom"
+          align="center"
           width="80"
         />
         <el-table-column label="姓名" align="center">
           <template slot-scope="{row}">
-            <span class="link-type" @click="handleDetail(row)">{{ row.name }}</span>
+            <span class="link-type">{{ row.name }}</span>
           </template>
         </el-table-column>
         <el-table-column label="邮箱" align="center">
@@ -77,23 +77,23 @@
             <span>{{ row.departmentName }}</span>
           </template>
         </el-table-column>
-        <el-table-column 
-          label="操作" 
-          align="center" 
-          width="230" 
+        <el-table-column
+          label="操作"
+          align="center"
+          width="230"
           class-name="small-padding fixed-width"
         >
           <template slot-scope="{row, $index}">
-            <el-button type="primary" size="mini" @click="handleDetail(row)">
-              详情
-            </el-button>
+<!--            <el-button type="primary" size="mini" @click="handleDetail(row)">-->
+<!--              详情-->
+<!--            </el-button>-->
             <el-button type="success" size="mini" @click="handleUpdate(row)">
               编辑
             </el-button>
-            <el-button 
-              v-if="row.status !== 'deleted'" 
-              size="mini" 
-              type="danger" 
+            <el-button
+              v-if="row.status !== 'deleted'"
+              size="mini"
+              type="danger"
               @click="handleDelete(row, $index)"
             >
               删除
@@ -103,23 +103,23 @@
       </el-table>
 
       <!-- 分页 -->
-      <pagination 
-        v-show="total > 0" 
-        :total="total" 
-        :page.sync="listQuery.page" 
-        :limit.sync="listQuery.limit" 
-        @pagination="getList" 
+      <pagination
+        v-show="total > 0"
+        :total="total"
+        :page.sync="listQuery.page"
+        :limit.sync="listQuery.size"
+        @pagination="getList"
       />
     </el-card>
 
     <!-- 编辑对话框 -->
     <el-dialog :title="textMap[dialogStatus]" :visible.sync="dialogFormVisible">
-      <el-form 
-        ref="dataForm" 
-        :rules="rules" 
-        :model="temp" 
-        label-position="left" 
-        label-width="70px" 
+      <el-form
+        ref="dataForm"
+        :rules="rules"
+        :model="temp"
+        label-position="left"
+        label-width="70px"
         style="width: 400px; margin-left:50px;"
       >
         <el-form-item label="姓名" prop="name">
@@ -132,12 +132,22 @@
           <el-input v-model="temp.position" />
         </el-form-item>
         <el-form-item label="部门">
-          <el-select v-model="temp.departmentId" class="filter-item" placeholder="请选择">
-            <el-option 
-              v-for="item in departmentOptions" 
-              :key="item.id" 
-              :label="item.name" 
-              :value="item.id" 
+          <el-select v-model="temp.department.id" class="filter-item" placeholder="请选择">
+            <el-option
+              v-for="item in departmentOptions"
+              :key="item.id"
+              :label="item.name"
+              :value="item.id"
+            />
+          </el-select>
+        </el-form-item>
+        <el-form-item label="用户">
+          <el-select v-model="temp.user.id" class="filter-item" placeholder="请选择">
+            <el-option
+                v-for="item in userOptions"
+                :key="item.id"
+                :label="item.username"
+                :value="item.id"
             />
           </el-select>
         </el-form-item>
@@ -146,8 +156,8 @@
         <el-button @click="dialogFormVisible = false">
           取消
         </el-button>
-        <el-button 
-          type="primary" 
+        <el-button
+          type="primary"
           @click="dialogStatus === 'create' ? createData() : updateData()"
         >
           确认
@@ -158,7 +168,8 @@
 </template>
 
 <script>
-import { fetchList, createEmployee, updateEmployee, deleteEmployee } from '@/api/employee'
+import {fetchList, createEmployee, updateEmployee, deleteEmployee, fetchUserList} from '@/api/employee'
+import { fetchDepartments} from '@/api/department'
 import Pagination from '@/components/Pagination'
 
 export default {
@@ -172,9 +183,10 @@ export default {
       listLoading: true,
       listQuery: {
         page: 1,
-        limit: 20,
+        size: 20,
         keyword: undefined
       },
+      userOptions: [],
       departmentOptions: [
         { id: 1, name: '研发部' },
         { id: 2, name: '人事部' },
@@ -186,7 +198,12 @@ export default {
         name: '',
         email: '',
         position: '',
-        departmentId: undefined
+        department: {
+          id:''
+        },
+        user:{
+          id:''
+        }
       },
       dialogFormVisible: false,
       dialogStatus: '',
@@ -205,21 +222,39 @@ export default {
   },
   created() {
     this.getList()
+    this.getfetchDepartments()
+
   },
   methods: {
+    getfetchUsers(id){
+      fetchUserList({id}).then(response => {
+        this.userOptions = response
+      }).catch((error) => {
+        console.log(error)
+      })
+    },
+    getfetchDepartments(){
+      fetchDepartments().then(response => {
+        console.log(response)
+        this.departmentOptions = response.data
+      }).catch((error) => {
+        console.log(error)
+      })
+    },
     getList() {
       this.listLoading = true
       fetchList(this.listQuery).then(response => {
-        // 兼容不同的响应格式
-        if (Array.isArray(response.data)) {
-          this.list = response.data
-          this.total = response.data.length
+        console.log(response)
+        if (Array.isArray(response.content)) {
+          this.list = response.content
+          this.total = response.totalElements
         } else {
-          this.list = response.data.content || response.data || []
-          this.total = response.data.totalElements || response.data.total || this.list.length
+          this.list = response.content || response || []
+          this.total = response.totalElements
         }
         this.listLoading = false
-      }).catch(() => {
+      }).catch((error) => {
+        console.log(error)
         this.listLoading = false
         // 如果API失败，使用模拟数据
         this.list = [
@@ -239,10 +274,16 @@ export default {
         name: '',
         email: '',
         position: '',
-        departmentId: undefined
+        department: {
+          id:''
+        },
+        user:{
+          id:''
+        }
       }
     },
     handleCreate() {
+      this.getfetchUsers()
       this.resetTemp()
       this.dialogStatus = 'create'
       this.dialogFormVisible = true
@@ -263,7 +304,8 @@ export default {
               duration: 2000
             })
             this.getList()
-          }).catch(() => {
+          }).catch((e) => {
+            console.log(e)
             this.$notify({
               title: '错误',
               message: '创建失败',
@@ -275,12 +317,21 @@ export default {
       })
     },
     handleUpdate(row) {
-      this.temp = Object.assign({}, row)
+      console.log(row)
+      this.temp.id = row.id
+      this.temp.name = row.name
+      this.temp.email = row.email
+      this.temp.position = row.position
+      this.temp.department.id = row.departmentId
+      this.temp.user.id = row.userId
+
+      console.log(this.temp)
       this.dialogStatus = 'update'
       this.dialogFormVisible = true
-      this.$nextTick(() => {
-        this.$refs['dataForm'].clearValidate()
-      })
+      this.getfetchUsers(this.temp.id)
+      // this.$nextTick(() => {
+      //   this.$refs['dataForm'].clearValidate()
+      // })
     },
     updateData() {
       this.$refs['dataForm'].validate((valid) => {
@@ -290,6 +341,7 @@ export default {
             const index = this.list.findIndex(v => v.id === this.temp.id)
             this.list.splice(index, 1, this.temp)
             this.dialogFormVisible = false
+            this.getList()
             this.$notify({
               title: '成功',
               message: '更新成功',
@@ -308,11 +360,14 @@ export default {
       })
     },
     handleDelete(row, index) {
+
+
       this.$confirm('此操作将永久删除该员工, 是否继续?', '提示', {
         confirmButtonText: '确定',
         cancelButtonText: '取消',
         type: 'warning'
       }).then(() => {
+        // 确认删除操作
         deleteEmployee(row.id).then(() => {
           this.$notify({
             title: '成功',
@@ -329,7 +384,34 @@ export default {
             duration: 2000
           })
         })
+      }).catch(() => {
+        // 点击取消时的操作
+        console.log('取消删除');
+        // 可以添加任何你需要的逻辑，像是提示用户取消删除等
       })
+
+      // this.$confirm('此操作将永久删除该员工, 是否继续?', '提示', {
+      //   confirmButtonText: '确定',
+      //   cancelButtonText: '取消',
+      //   type: 'warning'
+      // }).then(() => {
+      //   deleteEmployee(row.id).then(() => {
+      //     this.$notify({
+      //       title: '成功',
+      //       message: '删除成功',
+      //       type: 'success',
+      //       duration: 2000
+      //     })
+      //     this.list.splice(index, 1)
+      //   }).catch(() => {
+      //     this.$notify({
+      //       title: '错误',
+      //       message: '删除失败',
+      //       type: 'error',
+      //       duration: 2000
+      //     })
+      //   })
+      // })
     },
     handleDetail(row) {
       this.$router.push({ path: `/employees/${row.id}` })

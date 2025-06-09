@@ -5,7 +5,7 @@
         <span>部门列表</span>
         <el-button style="float: right; padding: 3px 0" type="text" @click="handleAdd">添加部门</el-button>
       </div>
-      
+
       <el-table :data="departmentList" style="width: 100%" border>
         <el-table-column prop="id" label="ID" width="80"></el-table-column>
         <el-table-column prop="name" label="部门名称"></el-table-column>
@@ -34,6 +34,8 @@
 </template>
 
 <script>
+import { fetchDepartments, fetchDepartment, createDepartment, updateDepartment,deleteDepartment } from '@/api/department'
+
 export default {
   name: 'Departments',
   data() {
@@ -57,12 +59,15 @@ export default {
     }
   },
   created() {
-    // 实际项目中应该通过API获取部门列表
-    // fetchDepartments().then(response => {
-    //   this.departmentList = response.data
-    // })
+    this.list();
   },
   methods: {
+    list(){
+      // 实际项目中应该通过API获取部门列表
+      fetchDepartments().then(response => {
+        this.departmentList = response.data
+      })
+    },
     handleAdd() {
       this.dialogTitle = '添加部门'
       this.department = { id: null, name: '' }
@@ -85,25 +90,19 @@ export default {
         type: 'warning'
       }).then(() => {
         // 实际项目中应该调用API删除部门
-        // deleteDepartment(row.id).then(() => {
-        //   this.getDepartments()
-        //   this.$message({
-        //     type: 'success',
-        //     message: '删除成功!'
-        //   })
-        // })
-        
-        // 模拟删除效果
-        this.departmentList = this.departmentList.filter(dept => dept.id !== row.id)
-        this.$message({
-          type: 'success',
-          message: '删除成功!'
+        deleteDepartment(row.id).then(() => {
+          this.list();
+          this.$message({
+            type: 'success',
+            message: '删除成功!'
+          })
         })
+
       }).catch(() => {
         this.$message({
           type: 'info',
           message: '已取消删除'
-        })          
+        })
       })
     },
     submitForm() {
@@ -111,33 +110,24 @@ export default {
         if (valid) {
           if (this.isEdit) {
             // 编辑部门
-            // updateDepartment(this.department.id, this.department).then(() => {
-            //   this.getDepartments()
-            //   this.dialogVisible = false
-            //   this.$message({
-            //     type: 'success',
-            //     message: '更新成功!'
-            //   })
-            // })
-            
-            // 模拟编辑效果
-            const index = this.departmentList.findIndex(dept => dept.id === this.department.id)
-            this.departmentList.splice(index, 1, this.department)
+            updateDepartment(this.department.id, this.department).then(() => {
+              this.dialogVisible = false
+              this.$message({
+                type: 'success',
+                message: '更新成功!'
+              })
+              this.list();
+            })
           } else {
             // 添加部门
-            // createDepartment(this.department).then(response => {
-            //   this.getDepartments()
-            //   this.dialogVisible = false
-            //   this.$message({
-            //     type: 'success',
-            //     message: '添加成功!'
-            //   })
-            // })
-            
-            // 模拟添加效果
-            const newDept = Object.assign({}, this.department)
-            newDept.id = this.departmentList.length + 1
-            this.departmentList.push(newDept)
+            createDepartment(this.department).then(response => {
+              this.dialogVisible = false
+              this.$message({
+                type: 'success',
+                message: '添加成功!'
+              })
+              this.list();
+            })
           }
           this.dialogVisible = false
           this.$message({

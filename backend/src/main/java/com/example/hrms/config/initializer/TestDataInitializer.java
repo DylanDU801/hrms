@@ -21,40 +21,40 @@ import java.util.List;
 @Slf4j
 @ConditionalOnProperty(name = "app.init.test-data", havingValue = "true", matchIfMissing = false)
 public class TestDataInitializer {
-    
+
     private final OutsourcingTestRepository outsourcingTestRepository;
     private final ApplicationRepository applicationRepository;
     private final SalaryRepository salaryRepository;
     private final EmployeeRepository employeeRepository;
-    
+
     public void initTestData() {
-        log.info("开始初始化测试数据...");
-        
+//        log.info("开始初始化测试数据...");
+
         // 创建一些外包测试任务
         createOutsourcingTests();
-        
+
         // 创建一些申请记录
         createApplications();
-        
+
         // 创建一些薪资记录
         createSalaries();
-        
-        log.info("测试数据初始化完成");
+
+//        log.info("测试数据初始化完成");
     }
-    
+
     private void createOutsourcingTests() {
         if (outsourcingTestRepository.count() > 0) {
             return;
         }
-        
+
         List<Employee> employees = employeeRepository.findAll();
         if (employees.size() < 2) {
             return;
         }
-        
+
         Employee creator = employees.get(0); // 假设第一个是创建者
         Employee tester = employees.get(1);  // 假设第二个是测试者
-        
+
         // 创建测试任务1
         OutsourcingTest test1 = new OutsourcingTest();
         test1.setTestName("用户登录功能测试");
@@ -67,7 +67,7 @@ public class TestDataInitializer {
         test1.setStartTime(LocalDateTime.now().minusDays(3));
         test1.setEndTime(LocalDateTime.now().plusDays(2));
         outsourcingTestRepository.save(test1);
-        
+
         // 创建测试任务2
         OutsourcingTest test2 = new OutsourcingTest();
         test2.setTestName("员工管理模块测试");
@@ -83,7 +83,7 @@ public class TestDataInitializer {
         test2.setStartTime(LocalDateTime.now().minusDays(10));
         test2.setEndTime(LocalDateTime.now().minusDays(3));
         outsourcingTestRepository.save(test2);
-        
+
         // 创建测试任务3
         OutsourcingTest test3 = new OutsourcingTest();
         test3.setTestName("薪资管理功能测试");
@@ -96,23 +96,23 @@ public class TestDataInitializer {
         test3.setStartTime(LocalDateTime.now().plusDays(1));
         test3.setEndTime(LocalDateTime.now().plusDays(5));
         outsourcingTestRepository.save(test3);
-        
-        log.info("创建了 {} 个测试任务", 3);
+
+//        log.info("创建了 {} 个测试任务", 3);
     }
-    
+
     private void createApplications() {
         if (applicationRepository.count() > 0) {
             return;
         }
-        
+
         List<Employee> employees = employeeRepository.findAll();
         if (employees.size() < 2) {
             return;
         }
-        
+
         Employee applicant = employees.get(1); // 申请人
         Employee approver = employees.get(0);  // 审批人
-        
+
         // 创建请假申请
         Application leaveApp = new Application();
         leaveApp.setApplicationType(Application.ApplicationType.LEAVE);
@@ -124,7 +124,7 @@ public class TestDataInitializer {
         leaveApp.setPriority(Application.Priority.NORMAL);
         leaveApp.setApplyTime(LocalDateTime.now().minusDays(1));
         applicationRepository.save(leaveApp);
-        
+
         // 创建加班申请
         Application overtimeApp = new Application();
         overtimeApp.setApplicationType(Application.ApplicationType.OVERTIME);
@@ -138,7 +138,7 @@ public class TestDataInitializer {
         overtimeApp.setApproveTime(LocalDateTime.now().minusDays(2));
         overtimeApp.setApproveReason("同意加班申请，注意休息");
         applicationRepository.save(overtimeApp);
-        
+
         // 创建设备申请
         Application equipmentApp = new Application();
         equipmentApp.setApplicationType(Application.ApplicationType.EQUIPMENT);
@@ -150,20 +150,20 @@ public class TestDataInitializer {
         equipmentApp.setPriority(Application.Priority.NORMAL);
         equipmentApp.setApplyTime(LocalDateTime.now().minusDays(5));
         applicationRepository.save(equipmentApp);
-        
-        log.info("创建了 {} 个申请记录", 3);
+
+//        log.info("创建了 {} 个申请记录", 3);
     }
-    
+
     private void createSalaries() {
         if (salaryRepository.count() > 0) {
             return;
         }
-        
+
         List<Employee> employees = employeeRepository.findAll();
         if (employees.isEmpty()) {
             return;
         }
-        
+
         // 为每个员工创建最近3个月的薪资记录
         for (Employee employee : employees) {
             // 4月薪资
@@ -173,7 +173,7 @@ public class TestDataInitializer {
             salary1.setAmount(getSalaryByPosition(employee.getPosition()));
             salary1.setRemark("2025年4月工资");
             salaryRepository.save(salary1);
-            
+
             // 3月薪资
             Salary salary2 = new Salary();
             salary2.setEmployee(employee);
@@ -181,7 +181,7 @@ public class TestDataInitializer {
             salary2.setAmount(getSalaryByPosition(employee.getPosition()));
             salary2.setRemark("2025年3月工资");
             salaryRepository.save(salary2);
-            
+
             // 2月薪资
             Salary salary3 = new Salary();
             salary3.setEmployee(employee);
@@ -190,14 +190,14 @@ public class TestDataInitializer {
             salary3.setRemark("2025年2月工资");
             salaryRepository.save(salary3);
         }
-        
-        log.info("为 {} 个员工创建了薪资记录", employees.size());
+
+//        log.info("为 {} 个员工创建了薪资记录", employees.size());
     }
-    
+
     private BigDecimal getSalaryByPosition(String position) {
         // 根据职位设置不同的薪资
         if (position == null) return new BigDecimal("8000");
-        
+
         switch (position) {
             case "系统管理员":
                 return new BigDecimal("15000");

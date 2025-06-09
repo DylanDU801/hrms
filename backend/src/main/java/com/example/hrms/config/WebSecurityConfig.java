@@ -1,5 +1,7 @@
 package com.example.hrms.config;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.SerializationFeature;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -43,7 +45,7 @@ public class WebSecurityConfig {
                     response.getWriter().write("{\"code\":50008,\"message\":\"未授权访问\"}");
                 })
             );
-    
+
         return http.build();
     }
 }
